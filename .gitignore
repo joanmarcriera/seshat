@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# App runtime data — never commit recordings, notes, or local config
+watcher-config.json
+*.wav
+recordings/
+notes/
+whisperx-output/
+out/
+
+# Note: uv.lock is intentionally tracked.
