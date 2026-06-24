@@ -12,9 +12,13 @@ from meeting_pipeline.transcribe import (
 
 
 def test_ffmpeg_binary_returns_absolute_existing_path():
-    # ffmpeg is installed in this environment; resolve to a real absolute path
-    # so the pipeline works even under a minimal launchd PATH.
-    path = ffmpeg_binary()
+    # When ffmpeg is installed, resolve to a real absolute path so the pipeline
+    # works even under a minimal launchd PATH. Skip where ffmpeg is absent
+    # (the missing case is covered by test_ffmpeg_binary_raises_when_missing).
+    try:
+        path = ffmpeg_binary()
+    except TranscribeError:
+        pytest.skip("ffmpeg not installed")
     assert Path(path).is_absolute()
     assert Path(path).exists()
 
