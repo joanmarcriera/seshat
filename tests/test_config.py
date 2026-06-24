@@ -54,10 +54,10 @@ def test_resolve_path_absolute_and_home(tmp_path):
 
 
 def test_resolve_path_bare_relative_uses_data_base_not_repo():
-    # A bare-relative value resolves under ~/Documents/MeetingNotes, NOT the repo.
+    # A bare-relative value resolves under ~/Documents/Scribed, NOT the repo.
     resolved = resolve_path("notes")
     assert resolved == (DATA_BASE_DIR / "notes").resolve()
-    assert str(resolved).endswith("/Documents/MeetingNotes/notes")
+    assert str(resolved).endswith("/Documents/Scribed/notes")
     # It must not be resolved against the install/repo directory.
     repo_root = Path(__file__).resolve().parent.parent
     assert repo_root not in resolved.parents

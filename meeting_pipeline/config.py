@@ -9,13 +9,13 @@ from pathlib import Path
 # Base directory for resolving bare-relative path settings (e.g. "notes").
 # Absolute and ~-prefixed settings are honoured as-is; only bare-relative
 # values are joined onto this base — never the install/repo directory.
-DATA_BASE_DIR: Path = Path.home() / "Documents" / "MeetingNotes"
+DATA_BASE_DIR: Path = Path.home() / "Documents" / "Scribed"
 
 DEFAULTS: dict = {
     "watch_interval_seconds": 20,
-    "recordings_dir": "~/Documents/MeetingNotes/recordings",
-    "notes_dir": "~/Documents/MeetingNotes/notes",
-    "work_dir": "~/Library/Application Support/MeetingNotes/work",
+    "recordings_dir": "~/Documents/Scribed/recordings",
+    "notes_dir": "~/Documents/Scribed/notes",
+    "work_dir": "~/Library/Application Support/Scribed/work",
     "transcribe": {
         "whisperx_url": "http://127.0.0.1:9000",
         "model": "medium",
@@ -84,7 +84,7 @@ def resolve_path(value: str) -> Path:
     """Resolve a path setting to an absolute Path.
 
     Expands ``~``; absolute values are returned unchanged; bare-relative
-    values resolve under ``DATA_BASE_DIR`` (~/Documents/MeetingNotes), never
+    values resolve under ``DATA_BASE_DIR`` (~/Documents/Scribed), never
     against the install/repo directory.
     """
     expanded = Path(value).expanduser()

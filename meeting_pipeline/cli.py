@@ -11,7 +11,7 @@ from .config import load_config, resolve_path
 from .state import State, iter_pending
 
 CONFIG_PATH = (
-    Path.home() / "Library" / "Application Support" / "MeetingNotes"
+    Path.home() / "Library" / "Application Support" / "Scribed"
     / "watcher-config.json"
 )
 

@@ -188,7 +188,7 @@ def render_settings_page(cfg: dict, *, saved: bool = False,
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meeting Notes — Settings</title>
+<title>Scribed — Settings</title>
 <style>
   :root {{ color-scheme: light dark; }}
   body {{ font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
@@ -226,7 +226,7 @@ def render_settings_page(cfg: dict, *, saved: bool = False,
   .dot.up {{ background:#34c759; }} .dot.down {{ background:#ff3b30; }}
 </style></head>
 <body><div class="wrap">
-  <h1>📝 Meeting Notes — Settings</h1>
+  <h1>📝 Scribed — Settings</h1>
   {banner}
   <form method="post" action="/save">
     <input type="hidden" name="_token" value="{_esc(token)}">

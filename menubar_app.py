@@ -19,7 +19,7 @@ from meeting_pipeline.settings_server import SettingsServer  # noqa: E402
 from meeting_pipeline.state import State, iter_pending  # noqa: E402
 
 CONFIG_PATH = (
-    Path.home() / "Library" / "Application Support" / "MeetingNotes"
+    Path.home() / "Library" / "Application Support" / "Scribed"
     / "watcher-config.json"
 )
 
@@ -175,7 +175,7 @@ def main() -> int:
     first_run = not CONFIG_PATH.exists()
     cfg = load_config(CONFIG_PATH)
 
-    class MeetingNotesApp(rumps.App):
+    class ScribedApp(rumps.App):
         def __init__(self):
             super().__init__("📝", quit_button=None)
             self.controller = WatcherController(
@@ -313,7 +313,7 @@ def main() -> int:
                 pass
             rumps.quit_application()
 
-    MeetingNotesApp().run()
+    ScribedApp().run()
     return 0
 
 

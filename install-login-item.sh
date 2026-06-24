@@ -4,7 +4,7 @@ set -euo pipefail
 LABEL="com.scribed.app"
 PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
 REPO_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-LOG_DIR="$HOME/Library/Logs/MeetingNotes"
+LOG_DIR="$HOME/Library/Logs/Scribed"
 LOG_FILE="$LOG_DIR/watcher.log"
 UV_BIN="$(command -v uv || true)"
 

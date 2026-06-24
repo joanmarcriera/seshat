@@ -19,7 +19,7 @@ def _cfg():
 
 def test_render_includes_current_values_and_sections():
     html = render_settings_page(_cfg())
-    assert "Meeting Notes" in html
+    assert "Scribed" in html
     assert "Summarisation" in html
     assert "127.0.0.1:9000" in html or "http://127.0.0.1:9000" in html
     assert "watch_interval_seconds" in html
@@ -165,7 +165,7 @@ def test_server_get_post_roundtrip(tmp_path):
         with urllib.request.urlopen(server.url) as resp:
             body = resp.read().decode()
             assert resp.status == 200
-            assert "Meeting Notes" in body
+            assert "Scribed" in body
         token = _scrape_token(body)
         # POST /save with the token included.
         data = urllib.parse.urlencode(_valid_form(token)).encode()
