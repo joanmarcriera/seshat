@@ -3,4 +3,5 @@ Scribed.xcodeproj/
 # Build output
 build/
 DerivedData/
+.build/
 *.xcuserstate
