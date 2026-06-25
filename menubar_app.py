@@ -15,6 +15,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from meeting_pipeline import pipeline as pipe  # noqa: E402
 from meeting_pipeline.config import load_config, resolve_path, save_config  # noqa: E402
+from meeting_pipeline.links import donate_url  # noqa: E402
 from meeting_pipeline.settings_server import SettingsServer  # noqa: E402
 from meeting_pipeline.state import State, iter_pending  # noqa: E402
 
@@ -194,7 +195,7 @@ def main() -> int:
             for label, secs in [("10s", 10), ("20s", 20), ("60s", 60), ("5m", 300)]:
                 interval_menu.add(rumps.MenuItem(
                     label, callback=self._make_interval_setter(secs)))
-            self.menu = [
+            menu = [
                 self.status_item,
                 None,
                 rumps.MenuItem("Process now", callback=self._process_now),
@@ -206,10 +207,17 @@ def main() -> int:
                 rumps.MenuItem("Open meeting-notes folder", callback=self._open_notes),
                 rumps.MenuItem("Open recordings folder", callback=self._open_recordings),
                 rumps.MenuItem("Settings…", callback=self._open_settings),
+            ]
+            # Only show Support when a donate link is configured (no dead links).
+            if donate_url():
+                menu.append(
+                    rumps.MenuItem("Support Scribed…", callback=self._open_support))
+            menu += [
                 None,
                 rumps.MenuItem("Pause watching", callback=self._toggle_pause),
                 rumps.MenuItem("Quit", callback=self._quit),
             ]
+            self.menu = menu
             self.timer = rumps.Timer(self._tick, cfg["watch_interval_seconds"])
             self.timer.start()
             self.reconciler = rumps.Timer(self._reconcile, 2)
@@ -305,6 +313,11 @@ def main() -> int:
 
         def _open_settings(self, _):
             subprocess.run(["open", self.settings_server.url])
+
+        def _open_support(self, _):
+            url = donate_url()
+            if url:
+                subprocess.run(["open", url])
 
         def _quit(self, _):
             try:

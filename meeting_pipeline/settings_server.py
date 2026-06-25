@@ -18,6 +18,8 @@ from typing import Any, Callable
 
 import requests
 
+from .links import donate_url
+
 MODEL_CHOICES = ["tiny", "base", "small", "medium", "large-v2", "large-v3"]
 INTERVAL_CHOICES = [("10 seconds", 10), ("20 seconds", 20), ("60 seconds", 60),
                     ("5 minutes", 300)]
@@ -185,6 +187,16 @@ def render_settings_page(cfg: dict, *, saved: bool = False,
     elif saved:
         banner = '<div class="banner ok">Saved — applied immediately.</div>'
 
+    donate = donate_url()
+    support_card = (
+        '<div class="card"><h2>Support</h2>'
+        '<div class="row"><span>Scribed is free &amp; open-source. '
+        'If it saves you time, you can chip in.</span>'
+        f'<a class="donate" href="{_esc(donate)}" target="_blank" '
+        'rel="noopener">Buy me a coffee ☕</a></div></div>'
+        if donate else ""
+    )
+
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -217,6 +229,8 @@ def render_settings_page(cfg: dict, *, saved: bool = False,
   button {{ font-size:15px; font-weight:500; padding:9px 22px; border:none; border-radius:8px;
            background:#0071e3; color:#fff; cursor:pointer; }}
   button.secondary {{ background:#e8e8ed; color:#1d1d1f; margin-right:8px; }}
+  a.donate {{ font-size:14px; font-weight:500; padding:7px 16px; border-radius:8px;
+            background:#0071e3; color:#fff; text-decoration:none; white-space:nowrap; }}
   .banner {{ padding:12px 16px; border-radius:10px; margin:12px 0; font-size:14px; }}
   .banner.ok {{ background:#e3f5e8; color:#1d6b33; }}
   .banner.error {{ background:#fde7e9; color:#9b1c2e; }} .banner ul {{ margin:6px 0 0 18px; }}
@@ -261,6 +275,7 @@ def render_settings_page(cfg: dict, *, saved: bool = False,
       </div>
       <div class="row"><button type="button" class="secondary" onclick="testConn()">Test connection</button></div>
     </div>
+    {support_card}
     <div class="footer"><button type="submit">Save</button></div>
   </form>
 </div>
