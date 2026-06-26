@@ -199,7 +199,9 @@ public struct Config: Codable, Equatable {
             at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(cfg).write(to: url)
+        // Atomic: a force-quit mid-write must not leave a half-written config
+        // that fails to decode on next launch (losing all the user's settings).
+        try encoder.encode(cfg).write(to: url, options: .atomic)
     }
 
     // MARK: Environment overrides (for the gated live test harness)

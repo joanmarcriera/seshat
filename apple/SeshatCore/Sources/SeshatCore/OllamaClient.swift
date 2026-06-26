@@ -51,8 +51,11 @@ public struct OllamaClient {
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw OllamaError("Ollama request failed: HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
         }
-        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-        let text = ((json?["response"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            let preview = String(decoding: data.prefix(200), as: UTF8.self)
+            throw OllamaError("Ollama returned a response that isn't valid JSON: \(preview)")
+        }
+        let text = ((json["response"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if text.isEmpty { throw OllamaError("Ollama returned an empty response.") }
         return text
     }
