@@ -7,22 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-26
+
+### Added
+
+- Native **Swift/SwiftUI** rewrite shipping in three editions from one codebase —
+  **Direct download, Setapp, and the Mac App Store** (`apple/`).
+- UI-free `SeshatCore` package (config, state, transcript cleaning, validation,
+  prompt, WhisperX/Ollama clients, AVFoundation audio conversion, pipeline) with
+  a headless `swift test` suite.
+- **"Report an Issue…"** menu item that opens a pre-filled GitHub issue with
+  non-sensitive diagnostics (version, edition, macOS, hardware).
+- Release automation: tag-triggered Developer ID notarized DMG → GitHub Release,
+  and App Store Connect upload (`.github/workflows/release*.yml`).
+
+### Changed
+
+- Renamed the product to **Seshat**.
+- Audio conversion uses **AVFoundation** instead of `ffmpeg` (no GPL dependency,
+  which is what makes App Store distribution possible).
+- Native Settings window replaces the localhost settings web page.
+
+### Removed
+
+- The original Python implementation (kept in git history as the behavioural spec).
+
 ## [0.1.0] - 2026-06-24
 
 ### Added
 
-- Initial release of **Scribed**.
-- macOS menu-bar app that watches a folder for new audio/video recordings.
-- Automatic pipeline: local `ffmpeg` conversion to WAV → transcription on a
+- Initial release: a macOS menu-bar app that watches a folder for new audio/video
+  recordings.
+- Automatic pipeline: local conversion to WAV → transcription on a
   user-configured **WhisperX** server → summarisation with a user-configured
   **Ollama** model → validation → Markdown note written to the notes folder.
-- Localhost **settings web page** (CSRF token + Host check, bound to
-  `127.0.0.1`) for configuring servers, folders, and the watch interval, with a
+- Settings page for configuring servers, folders, and the watch interval, with a
   **Test connection** button.
 - Menu actions: Process now, Copy last transcript, Open last note, Watch
   interval, Use local Ollama, open folders, Settings…, Pause/Resume, Quit.
-- Headless CLI (`scribed`) to process all pending recordings once.
-- `install-login-item.sh` to run the app at login (and `--uninstall` to stop).
+- Headless CLI to process all pending recordings once.
 
-[Unreleased]: https://github.com/Joanmarcriera/scribed/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Joanmarcriera/scribed/releases/tag/v0.1.0
+[Unreleased]: https://github.com/joanmarcriera/seshat/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/joanmarcriera/seshat/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/joanmarcriera/seshat/releases/tag/v0.1.0
