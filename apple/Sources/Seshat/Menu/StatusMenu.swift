@@ -61,6 +61,9 @@ struct StatusMenu: View {
             Button("Open project page…") {
                 if let url = URL(string: Links.projectURLString) { NSWorkspace.shared.open(url) }
             }
+            Button("Report an Issue…") {
+                if let url = Support.issueURL() { NSWorkspace.shared.open(url) }
+            }
         }
 
         #if DONATE_ENABLED

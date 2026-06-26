@@ -7,7 +7,10 @@ import Foundation
 enum Links {
     /// Lemon Squeezy "Pay What You Want" checkout (marcriera store), verified live.
     static let donateURLString = "https://marcriera.lemonsqueezy.com/checkout/buy/e71c4ce2-f423-4bb6-9883-268e2324035d"
-    static let projectURLString = "https://github.com/Joanmarcriera/seshat"
+
+    /// `owner/repo` — the single source of truth for the project + issue links.
+    static let repoSlug = "Joanmarcriera/seshat"
+    static let projectURLString = "https://github.com/\(repoSlug)"
 
     static let donateURL = URL(string: donateURLString)
 }
