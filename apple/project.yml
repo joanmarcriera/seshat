@@ -36,6 +36,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Seshat
         INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Joan Marc Riera Duocastella · MIT"
         INFOPLIST_KEY_NSAppleEventsUsageDescription: "Seshat opens Terminal to run the optional install commands you choose."
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Seshat connects to the WhisperX and Ollama servers you run on your local network to transcribe and summarise recordings."
 schemes:
   Seshat:
     build:

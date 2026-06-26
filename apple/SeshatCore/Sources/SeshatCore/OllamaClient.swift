@@ -46,7 +46,7 @@ public struct OllamaClient {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
-            throw OllamaError("Ollama request failed: \(error.localizedDescription)")
+            throw OllamaError(NetworkScope.friendlyError(error, service: "Ollama", url: url))
         }
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw OllamaError("Ollama request failed: HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")

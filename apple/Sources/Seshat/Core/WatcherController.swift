@@ -35,6 +35,7 @@ final class WatcherController: ObservableObject {
 
     static let intervalChoices = [10, 20, 60, 300]
     private static let onboardedKey = "seshat.didOnboard"
+    private static let localNetWarnedKey = "seshat.didWarnLocalNetwork"
 
     init(deps: PipelineDeps = .live()) {
         self.deps = deps
@@ -65,6 +66,7 @@ final class WatcherController: ObservableObject {
                             body: "Choose your folders and point Seshat at your WhisperX & Ollama servers to begin.")
             UserDefaults.standard.set(true, forKey: Self.onboardedKey)
         }
+        maybeWarnLocalNetwork()
         while !Task.isCancelled {
             if !isPaused { await scanOnce() }
             try? await Task.sleep(nanoseconds: UInt64(max(1, watchIntervalSeconds)) * 1_000_000_000)
@@ -98,6 +100,25 @@ final class WatcherController: ObservableObject {
     }
 
     private func clearStaleProcessing() { store()?.clearStaleProcessing() }
+
+    /// Warn (once) that macOS is about to ask for Local Network permission, so the
+    /// user understands the prompt and clicks Allow. Only when a LAN server is set.
+    private func maybeWarnLocalNetwork() {
+        guard NetworkScope.usesLocalNetwork(config),
+              !UserDefaults.standard.bool(forKey: Self.localNetWarnedKey) else { return }
+        UserDefaults.standard.set(true, forKey: Self.localNetWarnedKey)
+        let alert = NSAlert()
+        alert.messageText = "Seshat needs Local Network access"
+        alert.informativeText = """
+        Your WhisperX/Ollama servers are on your local network, so macOS will now ask \
+        permission to find devices on your network. Please click “Allow” — Seshat only uses \
+        this to reach the servers you configured. You can change it later in \
+        System Settings → Privacy & Security → Local Network.
+        """
+        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
 
     /// In the sandboxed edition, point the recordings/notes folders at the
     /// user-granted (bookmarked) locations. No-op elsewhere.
@@ -259,6 +280,7 @@ final class WatcherController: ObservableObject {
         if newConfig.summarise.allowLocalFallback && !wasAllowed { deferredBases.removeAll() }
         // New settings may fix a prior failure — clear failed markers and retry.
         lastError = nil
+        maybeWarnLocalNetwork()
         processNow()
     }
 

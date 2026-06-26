@@ -56,7 +56,8 @@ public struct WhisperXClient {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
-            throw WhisperXError("WhisperX request failed: \(error.localizedDescription)")
+            throw WhisperXError(NetworkScope.friendlyError(
+                error, service: "WhisperX", url: config.whisperxURL))
         }
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw WhisperXError("WhisperX request failed: HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
