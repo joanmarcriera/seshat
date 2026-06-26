@@ -24,8 +24,9 @@ What you expected to happen.
 - Ollama endpoint + model:
 
 **Logs**
-Relevant lines from `~/Library/Logs/MeetingNotes/watcher.log` (redact any
-private content, server IPs, or tokens).
+Relevant lines from `~/Library/Logs/Seshat/seshat.log` (redact any private
+content, server IPs, or tokens). Tip: the app's **Report an Issue…** menu item
+pre-fills your version and system info for you.
 
 **Additional context**
 Anything else that might help.

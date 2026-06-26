@@ -8,7 +8,7 @@ stored, and what (if anything) leaves your Mac.
 
 For each recording it processes, Seshat creates:
 
-- **A WAV copy** of the recording, produced locally by `ffmpeg` from your
+- **A WAV copy** of the recording, produced locally by AVFoundation from your
   original file.
 - **A transcript** of the audio, returned by your WhisperX server.
 - **A summary / structured note**, produced by your Ollama model from the
@@ -18,13 +18,13 @@ For each recording it processes, Seshat creates:
 ## Where data is stored locally
 
 - **Recordings** you drop in: the watched folder, by default
-  `~/Documents/MeetingNotes/recordings`.
+  `~/Documents/Seshat/recordings`.
 - **Notes** (the final Markdown): by default
-  `~/Documents/MeetingNotes/notes/<name>.md`.
+  `~/Documents/Seshat/notes/<name>.md`.
 - **Working/cache files** (including intermediate WAVs and transcripts) and the
   app's configuration (`watcher-config.json`): under
-  `~/Library/Application Support/MeetingNotes/`.
-- **Logs**: `~/Library/Logs/MeetingNotes/watcher.log`.
+  `~/Library/Application Support/Seshat/`.
+- **Logs**: `~/Library/Logs/Seshat/seshat.log`.
 
 All of these are written in **cleartext** under your home directory. Seshat
 does not encrypt them; protect them with your normal macOS account and disk
@@ -48,8 +48,8 @@ run WhisperX and Ollama locally and point Seshat at `127.0.0.1`.
 
 Seshat has **no telemetry and no phone-home**. It does not collect analytics,
 crash reports, usage statistics, or any other data, and it does not contact any
-server other than the WhisperX and Ollama URLs you set. The settings web page is
-bound to `127.0.0.1` only and is not reachable from the network.
+server other than the WhisperX and Ollama URLs you set. Settings are a native
+window in the app — there is no embedded web server or open network port.
 
 ## Recommendation
 

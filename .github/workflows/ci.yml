@@ -12,17 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ffmpeg
-        run: brew install ffmpeg
+      - name: Install xcodegen
+        run: brew install xcodegen
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+      - name: Run SeshatCore tests
+        run: cd apple/SeshatCore && swift test
 
-      - name: Install dependencies
-        run: uv sync --extra dev
+      - name: Generate Xcode project
+        run: cd apple && xcodegen generate
 
-      - name: Run tests
-        run: uv run pytest -q
-
-      - name: Check shell scripts
-        run: bash -n install-login-item.sh
+      - name: Build (Direct edition, unsigned)
+        run: |
+          cd apple && xcodebuild -project Seshat.xcodeproj -scheme Seshat \
+            -configuration Debug -derivedDataPath build \
+            -xcconfig configs/Direct.xcconfig CODE_SIGNING_ALLOWED=NO build

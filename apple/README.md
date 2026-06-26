@@ -1,8 +1,9 @@
 # Seshat — native macOS app (`apple/`)
 
 The native Swift/SwiftUI rewrite of Seshat, targeting **direct download, Setapp,
-and the Mac App Store** from one codebase. The Python app in the repo root is the
-behavioural reference.
+and the Mac App Store** from one codebase. This is the only implementation; a
+Python reference app previously lived at the repo root (recoverable from git
+history) and its behaviour is preserved here, noted in `// Port of …` comments.
 
 ## Layout
 
