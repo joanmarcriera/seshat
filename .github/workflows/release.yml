@@ -72,9 +72,9 @@ jobs:
       - name: Archive (Direct, Developer ID)
         run: |
           cd apple
-          xcodebuild -project Seshat.xcodeproj -scheme Seshat -configuration Release \
+          xcodebuild -project Distavo.xcodeproj -scheme Distavo -configuration Release \
             -xcconfig configs/Direct.xcconfig \
-            -archivePath build/Seshat-Direct.xcarchive \
+            -archivePath build/Distavo-Direct.xcarchive \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Developer ID Application" \
@@ -94,47 +94,47 @@ jobs:
           </dict></plist>
           PLIST
           xcodebuild -exportArchive \
-            -archivePath build/Seshat-Direct.xcarchive \
+            -archivePath build/Distavo-Direct.xcarchive \
             -exportOptionsPlist build/ExportOptions-Direct.plist \
             -exportPath build/export
 
       - name: Notarize and staple the app
         run: |
           cd apple
-          APP="build/export/Seshat.app"
-          ditto -c -k --keepParent "$APP" build/Seshat-app.zip
-          xcrun notarytool submit build/Seshat-app.zip \
+          APP="build/export/Distavo.app"
+          ditto -c -k --keepParent "$APP" build/Distavo-app.zip
+          xcrun notarytool submit build/Distavo-app.zip \
             --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_NOTARY_PASSWORD" --wait
           xcrun stapler staple "$APP"
 
       - name: Build, notarize and staple the DMG
         run: |
           cd apple
-          hdiutil create -volname "Seshat" -srcfolder build/export/Seshat.app \
-            -ov -format UDZO build/Seshat.dmg
-          xcrun notarytool submit build/Seshat.dmg \
+          hdiutil create -volname "Distavo" -srcfolder build/export/Distavo.app \
+            -ov -format UDZO build/Distavo.dmg
+          xcrun notarytool submit build/Distavo.dmg \
             --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_NOTARY_PASSWORD" --wait
-          xcrun stapler staple build/Seshat.dmg
-          xcrun stapler validate build/Seshat.dmg
+          xcrun stapler staple build/Distavo.dmg
+          xcrun stapler validate build/Distavo.dmg
 
       - name: Verify (Gatekeeper)
         run: |
           cd apple
-          codesign --verify --strict --verbose=2 build/export/Seshat.app
-          spctl -a -vvv --type exec build/export/Seshat.app
+          codesign --verify --strict --verbose=2 build/export/Distavo.app
+          spctl -a -vvv --type exec build/export/Distavo.app
 
       - name: Upload DMG artifact (dry run)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
-          name: Seshat-dmg
-          path: apple/build/Seshat.dmg
+          name: Distavo-dmg
+          path: apple/build/Distavo.dmg
 
       - name: Publish GitHub Release
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" apple/build/Seshat.dmg \
-            --title "Seshat $GITHUB_REF_NAME" --generate-notes \
-          || gh release upload "$GITHUB_REF_NAME" apple/build/Seshat.dmg --clobber
+          gh release create "$GITHUB_REF_NAME" apple/build/Distavo.dmg \
+            --title "Distavo $GITHUB_REF_NAME" --generate-notes \
+          || gh release upload "$GITHUB_REF_NAME" apple/build/Distavo.dmg --clobber

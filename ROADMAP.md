@@ -1,19 +1,19 @@
 # Roadmap
 
-Seshat is a native Swift/SwiftUI menu-bar app that ships in three editions from
+Distavo is a native Swift/SwiftUI menu-bar app that ships in three editions from
 one codebase. Distribution moves from a notarized direct download toward Setapp
 and the Mac App Store. The detailed, copy-pasteable shipping steps live in
 [`docs/distribution-checklist.md`](docs/distribution-checklist.md).
 
 ## Phase 1 — Native app + open source (current)
 
-- Native Swift/SwiftUI rewrite with a UI-free `SeshatCore` package (no GPL
+- Native Swift/SwiftUI rewrite with a UI-free `DistavoCore` package (no GPL
   dependencies — AVFoundation replaces ffmpeg, so the app can ship on the App
   Store).
 - Public GitHub repository under an MIT license, CI, issue/PR templates, and
   contribution guidelines in place.
 - Three build editions wired via `apple/configs/{Direct,Setapp,AppStore}.xcconfig`
-  with reverse-DNS bundle IDs `uk.co.riera.seshat` / `uk.co.riera.seshat-setapp`.
+  with reverse-DNS bundle IDs `uk.co.riera.distavo` / `uk.co.riera.distavo-setapp`.
 
 ## Phase 2 — Direct download (notarized)
 

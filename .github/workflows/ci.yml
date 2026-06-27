@@ -15,8 +15,8 @@ jobs:
       - name: Install xcodegen
         run: brew install xcodegen
 
-      - name: Run SeshatCore tests
-        run: cd apple/SeshatCore && swift test
+      - name: Run DistavoCore tests
+        run: cd apple/DistavoCore && swift test
 
       - name: Generate Xcode project
         run: cd apple && xcodegen generate
@@ -27,7 +27,7 @@ jobs:
           fail=0
           for edition in Direct Setapp AppStore; do
             echo "::group::Build $edition edition"
-            if xcodebuild -project Seshat.xcodeproj -scheme Seshat \
+            if xcodebuild -project Distavo.xcodeproj -scheme Distavo \
                  -configuration Debug -derivedDataPath "build/$edition" \
                  -xcconfig "configs/$edition.xcconfig" \
                  CODE_SIGNING_ALLOWED=NO build; then

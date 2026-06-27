@@ -1,6 +1,6 @@
-# Contributing to Seshat
+# Contributing to Distavo
 
-Thanks for your interest in improving Seshat! This guide covers how to set up,
+Thanks for your interest in improving Distavo! This guide covers how to set up,
 test, and submit changes. By participating you agree to follow our
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -15,30 +15,30 @@ test, and submit changes. By participating you agree to follow our
 cd apple && xcodegen generate
 ```
 
-`Seshat.xcodeproj` is generated from `apple/project.yml` and is gitignored —
+`Distavo.xcodeproj` is generated from `apple/project.yml` and is gitignored —
 re-run `xcodegen generate` whenever you add or remove a `.swift` file.
 
 ## Running the tests
 
 ```sh
-cd apple/SeshatCore && swift test
+cd apple/DistavoCore && swift test
 ```
 
-The core pipeline is covered by unit tests in `apple/SeshatCore/Tests/` (no
+The core pipeline is covered by unit tests in `apple/DistavoCore/Tests/` (no
 Xcode host or servers required). Please keep them green.
 
 ### Test-driven development
 
 We expect a **TDD** workflow: write or update a failing test that captures the
 behaviour you want, then implement the change until it passes. New features and
-bug fixes should come with tests. The `SeshatCore` package is deliberately
+bug fixes should come with tests. The `DistavoCore` package is deliberately
 UI-free so it can be tested without launching the app.
 
 ## Coding conventions
 
 - **Small, focused modules.** Keep each file doing one thing.
-- **Keep `SeshatCore` UI-free and testable.** No SwiftUI/AppKit imports in the
-  core package — only the `apple/Sources/Seshat/` app target touches the UI.
+- **Keep `DistavoCore` UI-free and testable.** No SwiftUI/AppKit imports in the
+  core package — only the `apple/Sources/Distavo/` app target touches the UI.
 - **Main-thread UI.** All menu/AppKit mutation must happen on the main thread;
   background work (scanning, processing) runs off the main actor and hands
   results back without mutating UI off-thread.
@@ -51,9 +51,9 @@ UI-free so it can be tested without launching the app.
 ```sh
 cd apple
 xcodegen generate
-xcodebuild -project Seshat.xcodeproj -scheme Seshat -configuration Debug \
+xcodebuild -project Distavo.xcodeproj -scheme Distavo -configuration Debug \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
-# then open apple/build/Build/Products/Debug/Seshat.app
+# then open apple/build/Build/Products/Debug/Distavo.app
 ```
 
 On first run, open **Settings…** from the menu bar to configure your WhisperX
@@ -63,7 +63,7 @@ and Ollama endpoints.
 
 1. Fork and create a feature branch.
 2. Make your change with accompanying tests (TDD).
-3. Ensure `cd apple/SeshatCore && swift test` passes and the app builds
+3. Ensure `cd apple/DistavoCore && swift test` passes and the app builds
    (`xcodegen generate` + `xcodebuild`).
 4. Update docs (`README.md`, etc.) if behaviour changed.
 5. **Do not commit any private data** — no recordings, notes, transcripts,

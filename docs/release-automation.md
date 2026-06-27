@@ -1,6 +1,6 @@
-# Seshat — Release automation
+# Distavo — Release automation
 
-How much of shipping Seshat is unattended, what you push to trigger it, and the
+How much of shipping Distavo is unattended, what you push to trigger it, and the
 one-time secrets each pipeline needs. The mechanical steps in
 `docs/distribution-checklist.md` are what these workflows automate.
 
@@ -28,7 +28,7 @@ manual by Setapp's own rules.
 
 From `distribution-checklist.md` §1 + §4.1:
 - **Developer ID Application** certificate (Direct/Setapp signing).
-- **Apple Distribution** certificate + an App record for `uk.co.riera.seshat` in
+- **Apple Distribution** certificate + an App record for `uk.co.riera.distavo` in
   App Store Connect (App Store signing/upload).
 - An **App-Specific Password** (notarization) and an **App Store Connect API key**
   (.p8, App Manager role — used for App Store signing + upload).
@@ -80,4 +80,4 @@ keychain profile instead of CI secrets) — handy for a one-off or to debug befo
 - **App Review** and store release — Apple requires human submission/approval.
 - **Setapp first upload** — Setapp only accepts the first version via its Web UI
   (`setapp-submission.md`); later versions can be scripted via its REST API.
-- **Trademark clearance** on "Seshat" — a hard gate before any store submission.
+- **Trademark clearance** on "Distavo" — a hard gate before any store submission.

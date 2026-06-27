@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed the product from **Seshat** to **Distavo** (coined from *distil*). The exact name
+  "Seshat" was already taken as an app name on the Mac App Store; "Distavo" is a distinctive,
+  cleared coinage. Bundle IDs are now `uk.co.riera.distavo` / `uk.co.riera.distavo-setapp`,
+  and the core package is `DistavoCore`. See `docs/trademark-assessment.md`.
+
 ## [1.0.0] - 2026-06-26
 
 ### Added
 
 - Native **Swift/SwiftUI** rewrite shipping in three editions from one codebase —
   **Direct download, Setapp, and the Mac App Store** (`apple/`).
-- UI-free `SeshatCore` package (config, state, transcript cleaning, validation,
+- UI-free `DistavoCore` package (config, state, transcript cleaning, validation,
   prompt, WhisperX/Ollama clients, AVFoundation audio conversion, pipeline) with
   a headless `swift test` suite.
 - **"Report an Issue…"** menu item that opens a pre-filled GitHub issue with
@@ -23,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Renamed the product to **Seshat**.
+- Renamed the product to **Seshat** (from the original *Scribed*).
 - Audio conversion uses **AVFoundation** instead of `ffmpeg` (no GPL dependency,
   which is what makes App Store distribution possible).
 - Native Settings window replaces the localhost settings web page.
@@ -47,6 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   interval, Use local Ollama, open folders, Settings…, Pause/Resume, Quit.
 - Headless CLI to process all pending recordings once.
 
-[Unreleased]: https://github.com/joanmarcriera/seshat/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/joanmarcriera/seshat/compare/v0.1.0...v1.0.0
-[0.1.0]: https://github.com/joanmarcriera/seshat/releases/tag/v0.1.0
+[Unreleased]: https://github.com/joanmarcriera/distavo/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/joanmarcriera/distavo/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/joanmarcriera/distavo/releases/tag/v0.1.0

@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for Seshat
+about: Suggest an idea for Distavo
 title: "[Feature] "
 labels: enhancement
 assignees: ""
