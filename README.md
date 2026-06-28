@@ -1,18 +1,18 @@
-# Seshat
+# Distavo
 
-![CI](https://github.com/Joanmarcriera/seshat/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Joanmarcriera/distavo/actions/workflows/ci.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![macOS](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
 
 > Drop a recording in a folder, get a tidy Markdown meeting note back.
 
-**Seshat** is a native macOS menu-bar app that watches a folder for audio/video
+**Distavo** is a native macOS menu-bar app that watches a folder for audio/video
 recordings and automatically turns each new one into a structured Markdown
 meeting note. It converts the file locally with **AVFoundation**, transcribes it
 on **your own WhisperX server**, summarises the transcript with **your own
 Ollama server**, validates the result, and writes a note to your notes folder.
 
-Seshat does not bundle any AI servers — you point it at WhisperX and Ollama
+Distavo does not bundle any AI servers — you point it at WhisperX and Ollama
 endpoints that you run and trust. **macOS only.**
 
 ## Screenshots
@@ -20,7 +20,7 @@ endpoints that you run and trust. **macOS only.**
 The native menu and settings window:
 
 <p align="center">
-  <img src="docs/screenshots/settings.png" alt="Seshat settings" width="420">
+  <img src="docs/screenshots/settings.png" alt="Distavo settings" width="420">
 </p>
 
 ## Requirements / Prerequisites
@@ -32,13 +32,13 @@ The native menu and settings window:
   `llama3.1:8b`) — see [Ollama](https://ollama.com).
 
 These servers can be on `localhost`, on another machine on your network, or
-anywhere you can reach — Seshat never starts them for you, and only ever talks
+anywhere you can reach — Distavo never starts them for you, and only ever talks
 to the URLs you configure.
 
 ## Install
 
-Seshat is heading to the **Mac App Store** and **Setapp**; a notarized
-direct-download build is published on [GitHub Releases](https://github.com/Joanmarcriera/seshat/releases).
+Distavo is heading to the **Mac App Store** and **Setapp**; a notarized
+direct-download build is published on [GitHub Releases](https://github.com/Joanmarcriera/distavo/releases).
 
 To build from source you need [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 (`brew install xcodegen`):
@@ -46,12 +46,12 @@ To build from source you need [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 ```sh
 cd apple
 xcodegen generate
-xcodebuild -project Seshat.xcodeproj -scheme Seshat -configuration Release \
+xcodebuild -project Distavo.xcodeproj -scheme Distavo -configuration Release \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
-# the app is written under apple/build/Build/Products/Release/Seshat.app
+# the app is written under apple/build/Build/Products/Release/Distavo.app
 ```
 
-Seshat launches as a menu-bar agent (no Dock icon) and can start at login from
+Distavo launches as a menu-bar agent (no Dock icon) and can start at login from
 its own settings.
 
 ## Configure
@@ -62,36 +62,36 @@ Open **Settings…** from the menu bar and fill in:
 - your **Ollama URL and model** for summarisation,
 - the watch / notes / work folders if you want non-default locations.
 
-Use the **Test connection** button to confirm Seshat can reach WhisperX and
+Use the **Test connection** button to confirm Distavo can reach WhisperX and
 Ollama before you drop in a recording.
 
 ## How it works
 
-1. Seshat watches the **recordings folder** (default
-   `~/Documents/Seshat/recordings`) on a configurable interval.
+1. Distavo watches the **recordings folder** (default
+   `~/Documents/Distavo/recordings`) on a configurable interval.
 2. When a new recording appears, **AVFoundation** converts it locally to WAV.
 3. The WAV is uploaded to your configured **WhisperX** server for
    transcription.
 4. The cleaned transcript is sent to your configured **Ollama** model for
    summarisation.
 5. The summary is validated and written as Markdown to the **notes folder**
-   (default `~/Documents/Seshat/notes/<name>.md`).
+   (default `~/Documents/Distavo/notes/<name>.md`).
 
 Config and the work/cache directory live under
-`~/Library/Application Support/Seshat/`, and logs are written to
-`~/Library/Logs/Seshat/seshat.log`.
+`~/Library/Application Support/Distavo/`, and logs are written to
+`~/Library/Logs/Distavo/distavo.log`.
 
 Supported input formats include `.wav`, `.m4a`, `.mp3`, `.opus`, `.ogg`,
 `.flac`, `.aac`, `.mov`, `.mp4`, and `.m4v` (anything AVFoundation can decode).
 
 ## Privacy
 
-Seshat is built to keep your data on machines you control:
+Distavo is built to keep your data on machines you control:
 
 - Audio is converted to WAV **locally** with AVFoundation.
 - The WAV is uploaded **only** to the WhisperX server you configured, and the
   transcript is sent **only** to the Ollama server you configured. These may be
-  remote, so **point Seshat only at servers you trust.**
+  remote, so **point Distavo only at servers you trust.**
 - Notes and transcripts are written in **cleartext** under your home directory.
 - **There is no telemetry and no phone-home.** Nothing is sent anywhere except
   the WhisperX/Ollama endpoints you set.
@@ -114,7 +114,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Support
 
-Seshat is free and MIT-licensed. If it saves you time, you can support its development:
+Distavo is free and MIT-licensed. If it saves you time, you can support its development:
 
 [![Lemon Squeezy](https://img.shields.io/badge/Lemon%20Squeezy-donate-FFC233?logo=lemonsqueezy&logoColor=black)](https://marcriera.lemonsqueezy.com/checkout/buy/e71c4ce2-f423-4bb6-9883-268e2324035d)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/joanmarcriera)

@@ -6,7 +6,7 @@ name: Release (App Store upload)
 # manual dispatch.
 #
 # One-time setup before this can run (see docs/release-automation.md):
-#   - App record for `uk.co.riera.seshat` created in App Store Connect.
+#   - App record for `uk.co.riera.distavo` created in App Store Connect.
 #   - Apple Distribution certificate exported as .p12.
 #   - An App Store Connect API key (.p8) with App Manager role — this also lets
 #     xcodebuild manage the provisioning profile automatically (no profile secret).
@@ -86,9 +86,9 @@ jobs:
       - name: Archive (App Store, Apple Distribution)
         run: |
           cd apple
-          xcodebuild -project Seshat.xcodeproj -scheme Seshat -configuration Release \
+          xcodebuild -project Distavo.xcodeproj -scheme Distavo -configuration Release \
             -xcconfig configs/AppStore.xcconfig \
-            -archivePath build/Seshat-AppStore.xcarchive \
+            -archivePath build/Distavo-AppStore.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/private_keys/AuthKey_${ASC_API_KEY_ID}.p8" \
             -authenticationKeyID "$ASC_API_KEY_ID" \
@@ -112,7 +112,7 @@ jobs:
           </dict></plist>
           PLIST
           xcodebuild -exportArchive \
-            -archivePath build/Seshat-AppStore.xcarchive \
+            -archivePath build/Distavo-AppStore.xcarchive \
             -exportOptionsPlist build/ExportOptions-AppStore.plist \
             -exportPath build/export-appstore \
             -allowProvisioningUpdates \

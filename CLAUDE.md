@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**Seshat** is a **native Swift/SwiftUI macOS menu-bar app** that watches a folder for audio/video
+**Distavo** is a **native Swift/SwiftUI macOS menu-bar app** that watches a folder for audio/video
 recordings and turns each new one into a structured Markdown meeting note. The pipeline is:
 **AVFoundation** (local WAV convert) → **WhisperX** server (transcribe) → clean → **Ollama** server
-(summarise) → validate → write note. Seshat bundles no AI servers; it only talks to the
+(summarise) → validate → write note. Distavo bundles no AI servers; it only talks to the
 WhisperX/Ollama URLs the user configures. macOS only.
 
 > The app ships in three editions from one codebase — **direct download, Setapp, and the Mac App
@@ -26,24 +26,24 @@ Everything lives under `apple/` (requires `brew install xcodegen`):
 
 ```sh
 cd apple && xcodegen generate            # REQUIRED after adding/removing .swift files
-cd apple/SeshatCore && swift test        # fast headless core/parity tests (what CI runs)
-cd apple/SeshatCore && swift test --filter PipelineTests   # run one test suite
-cd apple && xcodebuild -project Seshat.xcodeproj -scheme Seshat \
+cd apple/DistavoCore && swift test        # fast headless core/parity tests (what CI runs)
+cd apple/DistavoCore && swift test --filter PipelineTests   # run one test suite
+cd apple && xcodebuild -project Distavo.xcodeproj -scheme Distavo \
   -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 # build a specific edition: add  -xcconfig configs/{Direct,Setapp,AppStore}.xcconfig
 ```
 
-`Seshat.xcodeproj` is **generated and gitignored** — regenerate from `apple/project.yml`. There is
+`Distavo.xcodeproj` is **generated and gitignored** — regenerate from `apple/project.yml`. There is
 **no linter configured**.
 
 ## Architecture
 
-The UI-free pipeline logic lives in the **`SeshatCore`** SwiftPM package
-(`apple/SeshatCore/Sources/SeshatCore/`), unit-tested without Xcode or servers. The app target
-(`apple/Sources/Seshat/`) is the thin SwiftUI/AppKit shell on top. Each core file is a direct port
+The UI-free pipeline logic lives in the **`DistavoCore`** SwiftPM package
+(`apple/DistavoCore/Sources/DistavoCore/`), unit-tested without Xcode or servers. The app target
+(`apple/Sources/Distavo/`) is the thin SwiftUI/AppKit shell on top. Each core file is a direct port
 of the original Python module (noted in its header), so the design notes below still hold.
 
-`SeshatCore` module roles:
+`DistavoCore` module roles:
 
 - **`Pipeline.swift`** — `Pipeline.processOne(path:config:deps:)` orchestrates one recording and
   returns a `ProcessResult(status, base, message, ...)`. Statuses (`ProcessStatus`): `done`,
@@ -51,7 +51,7 @@ of the original Python module (noted in its header), so the design notes below s
   **Dependency injection:** all external effects (convert/transcribe/summarise/reachability) are
   passed in via `PipelineDeps` (with `.live()` wiring AVFoundation + the HTTP clients), which is how
   tests run the pipeline without real servers — **preserve this seam when editing.**
-- **`SeshatState.swift`** — the durability model. Per-recording **marker files** (`.processing` /
+- **`DistavoState.swift`** — the durability model. Per-recording **marker files** (`.processing` /
   `.done` / `.failed`) under `workDir/.state` make processing idempotent and crash-safe. `baseFor()`
   derives a subfolder-aware sanitized base name so same-named files in different subfolders don't
   collide. `waitUntilStable()` waits for a file to stop growing before processing. `iterPending()`
@@ -59,7 +59,7 @@ of the original Python module (noted in its header), so the design notes below s
 - **`Config.swift`** — JSON config load/save with deep-merge onto defaults (so new default keys
   appear for old configs); the same `watcher-config.json` schema as the original. **Path semantics
   matter:** `resolvePath()` expands `~`, honors absolute paths as-is, and resolves *bare-relative*
-  values under the data base dir (`~/Documents/Seshat`) — never the repo/install dir.
+  values under the data base dir (`~/Documents/Distavo`) — never the repo/install dir.
 - **`AudioConverter.swift`** — converts input media to WAV with **AVFoundation** (no ffmpeg).
 - **`WhisperXClient.swift` / `OllamaClient.swift`** (+ **`HTTPSupport.swift`**) — POST to the
   configured WhisperX / Ollama URLs.
@@ -67,11 +67,11 @@ of the original Python module (noted in its header), so the design notes below s
 - **`TranscriptCleaner.swift`** — turns a raw WhisperX result into a speaker-grouped, timestamp-free
   transcript. **`SummaryValidator.swift`** — post-summary sanity checks (repetition collapse / empty
   / overlong) that flag a note as `failed`.
-- **`ActivityLog.swift`** — append-only activity log at `~/Library/Logs/Seshat/seshat.log`, with
+- **`ActivityLog.swift`** — append-only activity log at `~/Library/Logs/Distavo/distavo.log`, with
   `recent(_:)` to read back recent lines.
 - **`NetworkScope.swift`** — classifies a configured endpoint as loopback / private-LAN / public.
 
-App target (`apple/Sources/Seshat/`):
+App target (`apple/Sources/Distavo/`):
 
 - **`Menu/StatusMenu.swift`** + **`Core/WatcherController.swift`** — the `MenuBarExtra` menu (one
   Button per item) wired to the GUI-agnostic controller (timers, locks, status, deferred-set
@@ -100,16 +100,16 @@ Terminal" helper is `#if !EDITION_APPSTORE`).
 
 ## Runtime data locations (not in the repo)
 
-- Config: `~/Library/Application Support/Seshat/watcher-config.json`
-- Work/cache + `.state` markers: `~/Library/Application Support/Seshat/work`
-- Default recordings/notes: `~/Documents/Seshat/recordings` and `.../notes`
-- Logs: `~/Library/Logs/Seshat/seshat.log`
+- Config: `~/Library/Application Support/Distavo/watcher-config.json`
+- Work/cache + `.state` markers: `~/Library/Application Support/Distavo/work`
+- Default recordings/notes: `~/Documents/Distavo/recordings` and `.../notes`
+- Logs: `~/Library/Logs/Distavo/distavo.log`
 
 Recordings, notes, WAVs, and `watcher-config.json` are gitignored — never commit user data.
 
 ## Tests
 
-`swift test` in `apple/SeshatCore`, macOS runner in CI (`.github/workflows/ci.yml`). Tests inject
+`swift test` in `apple/DistavoCore`, macOS runner in CI (`.github/workflows/ci.yml`). Tests inject
 fakes through the pipeline's `PipelineDeps` seam and use a WhisperX fixture / `MockURLProtocol` for
-the HTTP clients. `LiveE2ETests` is skipped unless `SESHAT_LIVE=1` (see `apple/README.md`). CI also
+the HTTP clients. `LiveE2ETests` is skipped unless `DISTAVO_LIVE=1` (see `apple/README.md`). CI also
 regenerates the Xcode project and builds the Direct edition unsigned to catch app-target breakage.

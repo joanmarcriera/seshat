@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# Build, sign, and (for Direct/Setapp) notarize a Seshat edition.
+# Build, sign, and (for Direct/Setapp) notarize a Distavo edition.
 # Companion to ../../docs/distribution-checklist.md.
 #
 # Usage:
-#   TEAM_ID=ABCDE12345 NOTARY_PROFILE=seshat-notary \
+#   TEAM_ID=ABCDE12345 NOTARY_PROFILE=distavo-notary \
 #     ./build-and-notarize.sh direct        # -> notarized, stapled .app + .zip
 #   TEAM_ID=... NOTARY_PROFILE=... ./build-and-notarize.sh setapp
 #   TEAM_ID=... ./build-and-notarize.sh appstore  # -> .pkg for App Store upload
@@ -13,7 +13,7 @@
 #   - "Developer ID Application" cert in the login keychain (direct/setapp)
 #   - "Apple Distribution" cert + Mac App Store provisioning profile (appstore)
 #   - notarytool keychain profile:
-#       xcrun notarytool store-credentials seshat-notary \
+#       xcrun notarytool store-credentials distavo-notary \
 #         --apple-id you@example.com --team-id TEAMID --password APP_SPECIFIC_PW
 set -euo pipefail
 
@@ -30,7 +30,7 @@ case "$EDITION" in
 esac
 
 BUILD_DIR="build/release-$EDITION"
-ARCHIVE="$BUILD_DIR/Seshat.xcarchive"
+ARCHIVE="$BUILD_DIR/Distavo.xcarchive"
 EXPORT_DIR="$BUILD_DIR/export"
 PLIST="$BUILD_DIR/exportOptions.plist"
 
@@ -50,7 +50,7 @@ cat > "$PLIST" <<PLIST
 PLIST
 
 echo "==> Archiving ($EDITION)"
-xcodebuild -project Seshat.xcodeproj -scheme Seshat -configuration Release \
+xcodebuild -project Distavo.xcodeproj -scheme Distavo -configuration Release \
   -xcconfig "$XCCONFIG" -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates \
   DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic archive
@@ -70,8 +70,8 @@ if [ "$EDITION" = "appstore" ]; then
 fi
 
 : "${NOTARY_PROFILE:?set NOTARY_PROFILE (notarytool keychain profile) to notarize}"
-APP="$EXPORT_DIR/Seshat.app"
-ZIP="$BUILD_DIR/Seshat-$EDITION.zip"
+APP="$EXPORT_DIR/Distavo.app"
+ZIP="$BUILD_DIR/Distavo-$EDITION.zip"
 
 echo "==> Notarizing"
 ditto -c -k --keepParent "$APP" "$ZIP"

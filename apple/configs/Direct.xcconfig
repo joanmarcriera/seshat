@@ -1,8 +1,8 @@
 // Direct edition — GitHub / notarized DMG. Not sandboxed (Developer ID +
 // notarization). External donate link allowed here (only the App Store / Setapp
 // channels forbid leading users out to pay).
-PRODUCT_BUNDLE_IDENTIFIER = uk.co.riera.seshat
-CODE_SIGN_ENTITLEMENTS = Seshat.entitlements
+PRODUCT_BUNDLE_IDENTIFIER = uk.co.riera.distavo
+CODE_SIGN_ENTITLEMENTS = Distavo.entitlements
 ENABLE_HARDENED_RUNTIME = YES
 // Absolute (NO $(inherited)): this file is the target's default base config, so
 // a command-line `-xcconfig configs/{Setapp,AppStore}.xcconfig` must fully

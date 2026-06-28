@@ -1,10 +1,10 @@
-# Seshat — Setapp Submission Playbook
+# Distavo — Setapp Submission Playbook
 
-Standalone, step-by-step guide for shipping the Seshat Setapp edition. All
+Standalone, step-by-step guide for shipping the Distavo Setapp edition. All
 technical requirements confirmed against Setapp docs (2026); see Sources at the
 end.
 
-Prerequisites: Apple Developer credentials and the `seshat-notary` keychain
+Prerequisites: Apple Developer credentials and the `distavo-notary` keychain
 profile must already be set up (see `docs/distribution-checklist.md` §1). Run the
 commands below from the repo's `apple/` directory.
 
@@ -25,8 +25,8 @@ Setapp offers two models; pick before you configure your app listing.
 
 | Model | Who it suits | How revenue works |
 |---|---|---|
-| **Setapp Membership** | Apps with broad appeal / daily use | Setapp shares ~**70 %** of subscription revenue across all developers in the bundle. Your share is weighted by how many members used Seshat during the billing period, multiplied by your chosen price-tier (tiers 1–100). You also earn a +20 % bonus on users you referred to Setapp. Paid for *usage*, not downloads. |
-| **Single-App Distribution** | Apps you want to sell individually | Sell Seshat as a one-time purchase or subscription via the Setapp Marketplace. Available in **EEA + US** only. You keep **85 %** of the app price. |
+| **Setapp Membership** | Apps with broad appeal / daily use | Setapp shares ~**70 %** of subscription revenue across all developers in the bundle. Your share is weighted by how many members used Distavo during the billing period, multiplied by your chosen price-tier (tiers 1–100). You also earn a +20 % bonus on users you referred to Setapp. Paid for *usage*, not downloads. |
+| **Single-App Distribution** | Apps you want to sell individually | Sell Distavo as a one-time purchase or subscription via the Setapp Marketplace. Available in **EEA + US** only. You keep **85 %** of the app price. |
 
 Setapp Membership gets you into the bundle catalogue and is the default path.
 Single-App Distribution requires opting in separately during onboarding; choose
@@ -41,19 +41,19 @@ Sources: [Membership revenue](https://docs.setapp.com/docs/setapp-membership-rev
 ## 2. Technical build requirements
 
 Most of this is already wired in `apple/configs/Setapp.xcconfig` and
-`Seshat.entitlements`, but the Setapp Framework integration requires a one-time
+`Distavo.entitlements`, but the Setapp Framework integration requires a one-time
 manual step in the vendor dashboard.
 
 ### 2.1 Bundle ID
 
 ```
-uk.co.riera.seshat-setapp
+uk.co.riera.distavo-setapp
 ```
 
 Already set via `PRODUCT_BUNDLE_IDENTIFIER` in `Setapp.xcconfig`. The `-setapp`
 suffix is mandatory. **This ID is permanent — it cannot be changed once set.**
 Any helper executables (login items, XPC services) must follow the pattern
-`uk.co.riera.seshat-setapp.<HelperName>`.
+`uk.co.riera.distavo-setapp.<HelperName>`.
 
 Source: [Set an app bundle ID](https://docs.setapp.com/docs/set-an-app-bundle-id)
 
@@ -61,7 +61,7 @@ Source: [Set an app bundle ID](https://docs.setapp.com/docs/set-an-app-bundle-id
 
 - Signed with **Developer ID Application** (same as the Direct edition).
 - **Apple notarization is required** by Setapp before submission.
-- No sandbox: `CODE_SIGN_ENTITLEMENTS = Seshat.entitlements` (the same
+- No sandbox: `CODE_SIGN_ENTITLEMENTS = Distavo.entitlements` (the same
   non-sandboxed entitlements used by the Direct edition).
 - `ENABLE_HARDENED_RUNTIME = YES` is already set in `Setapp.xcconfig`.
 
@@ -70,7 +70,7 @@ Source: [Set an app bundle ID](https://docs.setapp.com/docs/set-an-app-bundle-id
 **Needs Marc** — requires the vendor dashboard.
 
 1. In the vendor dashboard generate a **public key** for your app. Download it.
-2. Add the public key file to the Seshat app bundle (drag it into the Xcode
+2. Add the public key file to the Distavo app bundle (drag it into the Xcode
    project under the Setapp scheme target, or reference it in `project.yml`).
 3. Add `libSetapp.a` to the Xcode project (download the SDK from the dashboard).
    Wire it in `Setapp.xcconfig` — the flag is already present as a comment; add
@@ -105,8 +105,8 @@ following keys must be present in the Setapp build:
 
 | Key | Value |
 |---|---|
-| `CFBundleIdentifier` | `uk.co.riera.seshat-setapp` |
-| `CFBundleName` | `Seshat` |
+| `CFBundleIdentifier` | `uk.co.riera.distavo-setapp` |
+| `CFBundleName` | `Distavo` |
 | `CFBundleIconFile` | your app icon name |
 | `CFBundleVersion` | build number (integer) |
 | `CFBundleShortVersionString` | marketing version (e.g. `1.0.0`) |
@@ -129,19 +129,19 @@ The submitted zip must not exceed **1 GB**.
 ### 3.1 Archive the Setapp edition
 
 ```bash
-xcodebuild -project Seshat.xcodeproj \
-  -scheme Seshat \
+xcodebuild -project Distavo.xcodeproj \
+  -scheme Distavo \
   -configuration Release \
   -xcconfig configs/Setapp.xcconfig \
-  -archivePath build/Seshat-Setapp.xcarchive \
+  -archivePath build/Distavo-Setapp.xcarchive \
   archive \
   DEVELOPMENT_TEAM=<TEAM_ID> \
   CODE_SIGN_IDENTITY="Developer ID Application"
 ```
 
 > `-xcconfig configs/Setapp.xcconfig` is what makes the bundle ID
-> `uk.co.riera.seshat-setapp` and sets `EDITION_SETAPP`. Or run the wrapper:
-> `TEAM_ID=… NOTARY_PROFILE=seshat-notary ./scripts/build-and-notarize.sh setapp`,
+> `uk.co.riera.distavo-setapp` and sets `EDITION_SETAPP`. Or run the wrapper:
+> `TEAM_ID=… NOTARY_PROFILE=distavo-notary ./scripts/build-and-notarize.sh setapp`,
 > which does the archive → export → notarize → staple in one go.
 
 ### 3.2 Export
@@ -165,33 +165,33 @@ the `developer-id` method):
 
 ```bash
 xcodebuild -exportArchive \
-  -archivePath build/Seshat-Setapp.xcarchive \
+  -archivePath build/Distavo-Setapp.xcarchive \
   -exportPath build/export-setapp \
   -exportOptionsPlist ExportOptions-Setapp.plist
-# → build/export-setapp/Seshat.app
+# → build/export-setapp/Distavo.app
 ```
 
 ### 3.3 Notarize
 
 ```bash
-ditto -c -k --keepParent build/export-setapp/Seshat.app build/Seshat-Setapp-notarize.zip
+ditto -c -k --keepParent build/export-setapp/Distavo.app build/Distavo-Setapp-notarize.zip
 
-xcrun notarytool submit build/Seshat-Setapp-notarize.zip \
-  --keychain-profile "seshat-notary" \
+xcrun notarytool submit build/Distavo-Setapp-notarize.zip \
+  --keychain-profile "distavo-notary" \
   --wait
 ```
 
 If status is `Invalid`, pull the log (replace `<id>` with the UUID printed):
 
 ```bash
-xcrun notarytool log <id> --keychain-profile "seshat-notary" developer_log.json
+xcrun notarytool log <id> --keychain-profile "distavo-notary" developer_log.json
 ```
 
 ### 3.4 Staple
 
 ```bash
-xcrun stapler staple build/export-setapp/Seshat.app
-xcrun stapler validate build/export-setapp/Seshat.app   # → "The validate action worked!"
+xcrun stapler staple build/export-setapp/Distavo.app
+xcrun stapler validate build/export-setapp/Distavo.app   # → "The validate action worked!"
 ```
 
 ### 3.5 Package for Setapp
@@ -200,21 +200,21 @@ Setapp expects a **zip with a single root directory** containing only the `.app`
 — no `__MACOSX` metadata folder. Use `ditto`, not `zip`:
 
 ```bash
-ditto -c -k --keepParent build/export-setapp/Seshat.app build/Seshat-Setapp.zip
+ditto -c -k --keepParent build/export-setapp/Distavo.app build/Distavo-Setapp.zip
 ```
 
 Validate the structure before uploading:
 
 ```bash
-ditto -x -k build/Seshat-Setapp.zip /tmp/seshat-check && ls -la /tmp/seshat-check
-# Expect: one entry — Seshat.app — and no __MACOSX folder.
+ditto -x -k build/Distavo-Setapp.zip /tmp/distavo-check && ls -la /tmp/distavo-check
+# Expect: one entry — Distavo.app — and no __MACOSX folder.
 ```
 
 Verify signature and Gatekeeper acceptance as a final sanity check:
 
 ```bash
-codesign --verify --strict --verbose=2 build/export-setapp/Seshat.app
-spctl -a -vvv --type exec build/export-setapp/Seshat.app
+codesign --verify --strict --verbose=2 build/export-setapp/Distavo.app
+spctl -a -vvv --type exec build/export-setapp/Distavo.app
 # Expect: "accepted   source=Notarized Developer ID"
 ```
 
@@ -228,8 +228,8 @@ spctl -a -vvv --type exec build/export-setapp/Seshat.app
 
 1. Log in to the vendor dashboard at `https://developer.setapp.com`.
 2. Open your app listing → **Edit Version**.
-3. In the **Build** area, drag `build/Seshat-Setapp.zip` onto the upload target.
-4. Add **release notes** (plain text; describe what Seshat does for first-time
+3. In the **Build** area, drag `build/Distavo-Setapp.zip` onto the upload target.
+4. Add **release notes** (plain text; describe what Distavo does for first-time
    Setapp reviewers).
 5. Set the version status to **review** and submit.
 
