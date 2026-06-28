@@ -4,6 +4,28 @@ Build steps for the v1 capture→reward→thank loop. Design rationale is in
 [`docs/helper-program-design.md`](../../docs/helper-program-design.md). No code deploy — EspoCRM
 Entity Manager + an n8n workflow + the static form.
 
+## Deployment status (2026-06-28)
+
+**Live now:**
+- ✅ **`distavo.com`** — Cloudflare apex A → `78.46.160.189` (DNS-only), served by the Hetzner
+  `sites` compose project (`distavo` service in `/opt/stacks/core/sites.yml`), Traefik + Let's
+  Encrypt. Pages: `/` (placeholder) and **`/feedback/`** (the form). HTTPS 200, valid LE cert.
+- ✅ **n8n capture webhook** — workflow `distavo-feedback` (id `HojRSyh3uM6kGlEz`), **active**, CORS
+  locked to `https://distavo.com`. The live form POSTs here; every submission is **captured in n8n
+  execution history** (verified end-to-end). This is real v1 capture.
+
+**Blocked on Marc (the reward/thank enrichment can't be wired until these are cleared):**
+1. **EspoCRM API key returns 401** — `ESPOCRM_JOANMARCRIERA_ES` no longer authenticates (key
+   rotated/disabled). Regenerate the API User's key in EspoCRM admin and update `~/.tokens`.
+2. **The 3 custom entities don't exist** — create `Product` / `Feedback` / `HelperAccount` in the
+   EspoCRM Entity Manager (per §1 below) and grant the API user's role access to them. (Schema
+   change — left for your review rather than scripted blind on prod.)
+3. **No SMTP credential in n8n** for the thank-you email — add one (self-hosted `mail.joanmarcriera.es`).
+
+Once 1–3 are done, extend the `distavo-feedback` workflow with the award (+7) → EspoCRM upsert →
+email nodes below (the webhook + CORS are already in place).
+
+
 ## 1. EspoCRM entities (Administration → Entity Manager)
 
 Create three custom entities (multi-service by design — a new product is one `Product` row).
