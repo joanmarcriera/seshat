@@ -16,6 +16,15 @@
 
 ## Done
 
+- [x] Add automatic minor version bumps after merges to `main`.
+  Completion criteria: a workflow runs on non-bot pushes to `main`, increments
+  `MARKETING_VERSION` by one minor version, increments
+  `CURRENT_PROJECT_VERSION`, and commits the bump without looping.
+
+- [x] Check remote branch hygiene.
+  Completion criteria: stale remote-tracking refs are pruned and only active
+  unmerged work remains outside `main`.
+
 - [x] Add website guidance for recording legalities and recording tools.
   Completion criteria: homepage includes jurisdiction-neutral legal nuance, a
   not-legal-advice caveat, source links, and free/open recorder recommendations

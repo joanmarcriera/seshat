@@ -1,0 +1,50 @@
+name: Bump version after main merge
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-bump-main
+  cancel-in-progress: false
+
+jobs:
+  bump-minor-version:
+    if: >-
+      github.actor != 'github-actions[bot]' &&
+      !contains(github.event.head_commit.message, '[skip version bump]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump marketing minor version
+        id: bump
+        run: |
+          set -euo pipefail
+          output="$(python3 scripts/bump-minor-version.py)"
+          printf '%s\n' "$output"
+          version="$(printf '%s\n' "$output" | awk -F= '/^NEW_MARKETING_VERSION=/{print $2}')"
+          if [ -z "$version" ]; then
+            echo "::error::bump script did not report NEW_MARKETING_VERSION"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Commit version bump
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- apple/project.yml docs/setapp-submission.md ops/site/index.html; then
+            echo "No version changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apple/project.yml docs/setapp-submission.md ops/site/index.html
+          git commit -m "chore(release): bump version to ${{ steps.bump.outputs.version }} [skip version bump]"
+          git push

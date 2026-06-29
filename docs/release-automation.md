@@ -9,14 +9,18 @@ one-time secrets each pipeline needs. The mechanical steps in
 | Stage | Channel | Automated? | Trigger |
 | --- | --- | --- | --- |
 | Build + test (all 3 editions) | — | ✅ fully | every push / PR (`ci.yml`) |
+| Bump releasable version | — | ✅ fully | every non-bot push to `main` (`version-bump.yml`) |
 | Sign → notarize → DMG → GitHub Release | **Direct** | ✅ fully (once secrets set) | push a `v*` tag (`release.yml`) |
 | Build → sign → upload to App Store Connect | **App Store** | ✅ upload; **review/release manual** (Apple requires) | push a `v*` tag (`release-appstore.yml`) |
 | Submit build | **Setapp** | ❌ first version is Web-UI only; later versions scriptable | manual — see `setapp-submission.md` |
 
-Push **one tag** (`git tag v1.0.0 && git push origin v1.0.0`) and both release
-workflows fire: a notarized DMG lands on GitHub Releases, and the App Store build
-uploads to App Store Connect ready for you to submit. Setapp's first upload stays
-manual by Setapp's own rules.
+Every merge to `main` gets a follow-up bot commit that bumps
+`MARKETING_VERSION` by one minor version (`1.1.0` → `1.2.0`, patch reset to
+zero) and increments `CURRENT_PROJECT_VERSION` by one build number. Push **one
+tag** for the version already on `main` (`git tag v1.2.0 && git push origin
+v1.2.0`) and both release workflows fire: a notarized DMG lands on GitHub
+Releases, and the App Store build uploads to App Store Connect ready for you to
+submit. Setapp's first upload stays manual by Setapp's own rules.
 
 > These workflows are validated for YAML/shell syntax but **cannot be run end-to-end
 > until the secrets below exist and the Apple/App-Store-Connect setup in
@@ -86,6 +90,13 @@ Never commit these; never paste them in chat — add them yourself in the GitHub
 `apple/scripts/build-and-notarize.sh {direct|setapp|appstore}` does the same signing
 + notarization from your Mac (uses your Xcode-logged-in account / a `notarytool`
 keychain profile instead of CI secrets) — handy for a one-off or to debug before tagging.
+
+To preview or apply the same main-merge version bump locally:
+
+```bash
+python3 scripts/bump-minor-version.py --dry-run
+python3 scripts/bump-minor-version.py
+```
 
 ## What stays manual (and why)
 - **App Review** and store release — Apple requires human submission/approval.

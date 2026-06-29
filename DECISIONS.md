@@ -51,3 +51,24 @@ activation remains blocked on Marc's vendor account assets.
 
 Revisit when: The Setapp SDK archive and app public key file are in the repo or
 available in a local, documented path.
+
+## 2026-06-29 - Bump versions after main merges, but do not auto-tag
+
+Decision: Add a `version-bump.yml` workflow that runs after non-bot pushes to
+`main`, increments the marketing minor version and build number, and commits
+the result with `[skip version bump]`.
+
+Alternatives considered: Create a `v*` tag automatically on every merge to
+`main`, or require manual version bump commits in every pull request.
+
+Rationale: Tags trigger the expensive signing, notarization, GitHub Release,
+and App Store upload workflows. Keeping the version ahead automatically makes
+the next release monotonic without unexpectedly uploading a store build after
+every merge.
+
+Consequences: Releases still require a deliberate `v*` tag. If branch
+protection blocks GitHub Actions from pushing to `main`, the workflow will need
+either an allowed bot token or a PR-based bump flow.
+
+Revisit when: Every merge to `main` should become a fully automated public
+release and App Store Connect upload.

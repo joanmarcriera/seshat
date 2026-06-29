@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Update `distavo.com` for the 1.1.0 App Store submission and move the Setapp
-edition as far as possible without vendor-dashboard assets.
+Keep release versions increasing automatically after merges to `main` and
+verify that the repository has no stale branches.
 
 ## Completed work
 
@@ -17,6 +17,10 @@ edition as far as possible without vendor-dashboard assets.
 - `ops/site` is deployed and live at `https://distavo.com/`.
 - Homepage now includes recording-law nuance and a free/open recorder tools
   section, including Notely Voice from F-Droid.
+- Added `version-bump.yml` so every non-bot push to `main` gets a follow-up
+  commit that increments the marketing minor version and build number.
+- Remote branch hygiene was checked after `git fetch --prune`; only `main` and
+  the active unmerged `fix/appstore-signing` branch remain.
 
 ## Current implementation state
 
@@ -29,6 +33,8 @@ edition as far as possible without vendor-dashboard assets.
   including `NSUpdateSecurityPolicy`.
 - `apple/scripts/build-and-notarize.sh setapp` packages a notarized app with
   `Distavo.app` and `AppIcon.png` in the final upload zip.
+- `scripts/bump-minor-version.py` is the single script used by the workflow for
+  main-merge version bumps.
 
 ## Files changed
 
@@ -40,6 +46,8 @@ edition as far as possible without vendor-dashboard assets.
 - `PROJECT_STATE.md`
 - `TASKS.md`
 - `DECISIONS.md`
+- `.github/workflows/version-bump.yml`
+- `scripts/bump-minor-version.py`
 
 ## Tests run
 
@@ -71,9 +79,25 @@ edition as far as possible without vendor-dashboard assets.
   passed.
 - Added legal and recorder source links resolve over HTTPS. The ICO link was
   checked with `GET` because it rejects `HEAD`.
+- `git fetch origin --prune` — passed; no merged remote branches remain.
+- Remote branch audit — passed: `origin/main` plus active unmerged
+  `origin/fix/appstore-signing` only.
+- `python3 -m py_compile scripts/bump-minor-version.py` — passed.
+- `python3 scripts/bump-minor-version.py --dry-run` — passed:
+  `1.1.0` → `1.2.0`, build `2` → `3`.
+- Temporary-copy write test for `scripts/bump-minor-version.py` — passed:
+  updated `apple/project.yml`, `ops/site/index.html`, and
+  `docs/setapp-submission.md`.
+- YAML parse check for `.github/workflows/version-bump.yml` — passed.
+- `actionlint` availability check — not installed locally.
+- `gh api repos/joanmarcriera/distavo/branches --paginate` — passed:
+  remote repository has only `main` and active `fix/appstore-signing`.
+- `git diff --check` after version policy changes — passed.
 
 ## Unresolved risks
 
+- The new version bump workflow must be merged to `main` before it can enforce
+  future main-merge version bumps.
 - Setapp Framework integration still requires the vendor dashboard public key
   and SDK archive.
 - The first Setapp build must still be uploaded through the Setapp Web UI.
@@ -85,4 +109,4 @@ edition as far as possible without vendor-dashboard assets.
 
 ## Next recommended action
 
-Commit and push the legal/tools homepage update.
+Commit and push this version policy update.
