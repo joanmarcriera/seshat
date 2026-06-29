@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Keep release versions increasing automatically after merges to `main` and
-verify that the repository has no stale branches.
+Fix Apple ITMS-90889 for the next App Store delivery by ensuring the main
+`Distavo.app` bundle embeds a Mac App Store provisioning profile.
 
 ## Completed work
 
@@ -21,6 +21,9 @@ verify that the repository has no stale branches.
   commit that increments the marketing minor version and build number.
 - Remote branch hygiene was checked after `git fetch --prune`; only `main` and
   the active unmerged `fix/appstore-signing` branch remain.
+- App Store release workflow now requires an explicit Mac App Store
+  provisioning profile secret, pins it for manual signing, and verifies the
+  archive and exported package contain `embedded.provisionprofile`.
 
 ## Current implementation state
 
@@ -35,6 +38,8 @@ verify that the repository has no stale branches.
   `Distavo.app` and `AppIcon.png` in the final upload zip.
 - `scripts/bump-minor-version.py` is the single script used by the workflow for
   main-merge version bumps.
+- `.github/workflows/release-appstore.yml` no longer relies on automatic
+  provisioning for the App Store archive/export path.
 
 ## Files changed
 
@@ -48,6 +53,9 @@ verify that the repository has no stale branches.
 - `DECISIONS.md`
 - `.github/workflows/version-bump.yml`
 - `scripts/bump-minor-version.py`
+- `.github/workflows/release-appstore.yml`
+- `docs/release-automation.md`
+- `docs/distribution-checklist.md`
 
 ## Tests run
 
@@ -93,11 +101,26 @@ verify that the repository has no stale branches.
 - `gh api repos/joanmarcriera/distavo/branches --paginate` — passed:
   remote repository has only `main` and active `fix/appstore-signing`.
 - `git diff --check` after version policy changes — passed.
+- YAML parse check for `.github/workflows/release-appstore.yml` after the
+  ITMS-90889 fix — passed.
+- Extracted all shell `run` blocks from `.github/workflows/release-appstore.yml`
+  and ran `bash -n` on each — passed.
+- `git diff --check` after the ITMS-90889 workflow/docs changes — passed.
+
+## Incoming Apple warning
+
+- ITMS-90889 for Distavo 1.1.0 build 2: delivery succeeded, but TestFlight
+  cannot use the build because `Distavo.app` is missing a provisioning profile.
 
 ## Unresolved risks
 
 - The new version bump workflow must be merged to `main` before it can enforce
   future main-merge version bumps.
+- The next App Store upload requires a new GitHub Actions secret:
+  `MAC_APP_STORE_PROVISIONING_PROFILE_BASE64`.
+- Full end-to-end App Store signing/export/upload validation still requires
+  the Apple signing certificates, App Store Connect API key, and new
+  provisioning-profile secret in GitHub Actions.
 - Setapp Framework integration still requires the vendor dashboard public key
   and SDK archive.
 - The first Setapp build must still be uploaded through the Setapp Web UI.
@@ -109,4 +132,5 @@ verify that the repository has no stale branches.
 
 ## Next recommended action
 
-Commit and push this version policy update.
+Add `MAC_APP_STORE_PROVISIONING_PROFILE_BASE64` to GitHub Actions secrets, then
+rerun the App Store upload workflow for the next build.

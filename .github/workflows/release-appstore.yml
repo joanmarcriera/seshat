@@ -10,9 +10,9 @@ name: Release (App Store upload)
 #   - TWO signing certificates exported as .p12 (a Mac App Store .pkg needs both):
 #       * "Apple Distribution"               — signs the .app
 #       * "3rd Party Mac Developer Installer" — signs the .pkg installer
-#   - An App Store Connect API key (.p8) with App Manager role. With Automatic
-#     signing (`-allowProvisioningUpdates`) this key lets xcodebuild fetch/manage
-#     the Mac App Store provisioning profile itself — so there is no profile secret.
+#   - A Mac App Store provisioning profile for `uk.co.riera.distavo`, exported
+#     as a repository secret. TestFlight expects the main .app bundle to embed it.
+#   - An App Store Connect API key (.p8) with App Manager role.
 #
 # Required repo secrets:
 #   APPLE_TEAM_ID                       10-char Team ID
@@ -20,6 +20,8 @@ name: Release (App Store upload)
 #   APPLE_DISTRIBUTION_CERT_PASSWORD    password set when exporting that .p12
 #   APPLE_INSTALLER_CERT_P12_BASE64     base64 of the "3rd Party Mac Developer Installer" cert (.p12)
 #   APPLE_INSTALLER_CERT_PASSWORD       password set when exporting that .p12
+#   MAC_APP_STORE_PROVISIONING_PROFILE_BASE64
+#                                         base64 of the Mac App Store .provisionprofile
 #   ASC_API_KEY_ID                      App Store Connect API Key ID
 #   ASC_API_ISSUER_ID                   App Store Connect API Issuer ID
 #   ASC_API_KEY_P8_BASE64               base64 of the API key file (AuthKey_XXXX.p8)
@@ -45,6 +47,7 @@ jobs:
           missing=()
           for s in APPLE_TEAM_ID APPLE_DISTRIBUTION_CERT_P12_BASE64 APPLE_DISTRIBUTION_CERT_PASSWORD \
                    APPLE_INSTALLER_CERT_P12_BASE64 APPLE_INSTALLER_CERT_PASSWORD \
+                   MAC_APP_STORE_PROVISIONING_PROFILE_BASE64 \
                    ASC_API_KEY_ID ASC_API_ISSUER_ID ASC_API_KEY_P8_BASE64; do
             [ -n "${!s:-}" ] || missing+=("$s")
           done
@@ -57,6 +60,7 @@ jobs:
           APPLE_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
           APPLE_INSTALLER_CERT_P12_BASE64: ${{ secrets.APPLE_INSTALLER_CERT_P12_BASE64 }}
           APPLE_INSTALLER_CERT_PASSWORD: ${{ secrets.APPLE_INSTALLER_CERT_PASSWORD }}
+          MAC_APP_STORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.MAC_APP_STORE_PROVISIONING_PROFILE_BASE64 }}
           ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
 
       - name: Install xcodegen
@@ -138,29 +142,82 @@ jobs:
           cp "$RUNNER_TEMP/private_keys/AuthKey_${ASC_API_KEY_ID}.p8" \
             "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
 
+      - name: Install App Store provisioning profile
+        timeout-minutes: 3
+        env:
+          PROFILE_BASE64: ${{ secrets.MAC_APP_STORE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          profile_src="$RUNNER_TEMP/distavo-appstore.provisionprofile"
+          profile_plist="$RUNNER_TEMP/distavo-appstore-profile.plist"
+          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profile_src"
+          security cms -D -i "$profile_src" > "$profile_plist"
+
+          profile_uuid="$(/usr/libexec/PlistBuddy -c 'Print UUID' "$profile_plist")"
+          profile_name="$(/usr/libexec/PlistBuddy -c 'Print Name' "$profile_plist")"
+          profile_team="$(/usr/libexec/PlistBuddy -c 'Print TeamIdentifier:0' "$profile_plist")"
+          profile_app_id="$(/usr/libexec/PlistBuddy -c 'Print Entitlements:application-identifier' "$profile_plist" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c 'Print Entitlements:com.apple.application-identifier' "$profile_plist")"
+          profile_team_entitlement="$(/usr/libexec/PlistBuddy -c 'Print Entitlements:com.apple.developer.team-identifier' "$profile_plist")"
+          get_task_allow="$(/usr/libexec/PlistBuddy -c 'Print Entitlements:get-task-allow' "$profile_plist" 2>/dev/null || true)"
+
+          expected_app_id="${APPLE_TEAM_ID}.uk.co.riera.distavo"
+          if [[ "$profile_team" != "$APPLE_TEAM_ID" || "$profile_team_entitlement" != "$APPLE_TEAM_ID" ]]; then
+            echo "::error::Provisioning profile belongs to team '$profile_team'/'$profile_team_entitlement', expected '$APPLE_TEAM_ID'"
+            exit 1
+          fi
+          if [[ "$profile_app_id" != "$expected_app_id" ]]; then
+            echo "::error::Provisioning profile app id is '$profile_app_id', expected '$expected_app_id'"
+            exit 1
+          fi
+          if [[ "$get_task_allow" == "true" ]]; then
+            echo "::error::Provisioning profile has get-task-allow=true; use a Mac App Store distribution profile"
+            exit 1
+          fi
+
+          profile_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$profile_dir"
+          cp "$profile_src" "$profile_dir/$profile_uuid.provisionprofile"
+
+          {
+            echo "DISTAVO_APPSTORE_PROFILE_UUID=$profile_uuid"
+            echo "DISTAVO_APPSTORE_PROFILE_NAME=$profile_name"
+          } >> "$GITHUB_ENV"
+
+          echo "Installed provisioning profile '$profile_name' ($profile_uuid)"
+
       - name: Generate project
         run: cd apple && xcodegen generate
 
-      # Automatic signing: the imported certs sign the .app/.pkg, and
-      # -allowProvisioningUpdates lets xcodebuild fetch/manage the Mac App Store
-      # provisioning profile via the App Store Connect API key (App-Manager role is
-      # enough for profile management — it just can't mint distribution *certs*,
-      # which is why we import those above). The Distavo-AppStore scheme pins the
-      # sandboxed AppStore.xcconfig (bundle id + app-sandbox entitlements).
-      - name: Archive (App Store, automatic signing)
+      # Manual signing: pin the Apple Distribution identity and the Mac App Store
+      # provisioning profile so the archived app contains Contents/embedded.provisionprofile.
+      # Without that profile Apple accepts delivery but marks the build ineligible
+      # for TestFlight (ITMS-90889).
+      - name: Archive (App Store, manual signing)
         timeout-minutes: 10
         run: |
           set -euo pipefail
           cd apple
           xcodebuild -project Distavo.xcodeproj -scheme Distavo-AppStore \
             -archivePath build/Distavo-AppStore.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/private_keys/AuthKey_${ASC_API_KEY_ID}.p8" \
-            -authenticationKeyID "$ASC_API_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_API_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$DISTAVO_APP_SIGNING_IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER="$DISTAVO_APPSTORE_PROFILE_NAME" \
             archive
+
+          embedded_profile="build/Distavo-AppStore.xcarchive/Products/Applications/Distavo.app/Contents/embedded.provisionprofile"
+          if [[ ! -f "$embedded_profile" ]]; then
+            echo "::error::Archived Distavo.app is missing Contents/embedded.provisionprofile"
+            exit 1
+          fi
+
+          security cms -D -i "$embedded_profile" > build/Archive-EmbeddedProfile.plist
+          archived_profile_uuid="$(/usr/libexec/PlistBuddy -c 'Print UUID' build/Archive-EmbeddedProfile.plist)"
+          if [[ "$archived_profile_uuid" != "$DISTAVO_APPSTORE_PROFILE_UUID" ]]; then
+            echo "::error::Archived profile UUID '$archived_profile_uuid' did not match expected '$DISTAVO_APPSTORE_PROFILE_UUID'"
+            exit 1
+          fi
 
       - name: Export the App Store package
         timeout-minutes: 15
@@ -171,7 +228,8 @@ jobs:
           # cert auto-selection grab the *installer* cert to sign the .app code, which
           # fails ("this identity cannot be used for signing code"). The .app is signed
           # with "Apple Distribution"; the .pkg installer with "3rd Party Mac Developer
-          # Installer". The profile is still resolved via -allowProvisioningUpdates below.
+          # Installer". The provisioning profile is pinned explicitly so TestFlight can
+          # identify the main bundle as provisioned.
           # NB: these comments live OUTSIDE the heredoc — '#' inside <<PLIST is literal
           # text and would corrupt the plist ("isn't in the correct format").
           cat > build/ExportOptions-AppStore.plist <<PLIST
@@ -184,6 +242,9 @@ jobs:
             <key>signingStyle</key><string>manual</string>
             <key>signingCertificate</key><string>${DISTAVO_APP_SIGNING_IDENTITY}</string>
             <key>installerSigningCertificate</key><string>${DISTAVO_INSTALLER_SIGNING_IDENTITY}</string>
+            <key>provisioningProfiles</key><dict>
+              <key>uk.co.riera.distavo</key><string>${DISTAVO_APPSTORE_PROFILE_UUID}</string>
+            </dict>
           </dict></plist>
           PLIST
           plutil -lint build/ExportOptions-AppStore.plist
@@ -191,10 +252,6 @@ jobs:
             -archivePath build/Distavo-AppStore.xcarchive \
             -exportOptionsPlist build/ExportOptions-AppStore.plist \
             -exportPath build/export-appstore \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/private_keys/AuthKey_${ASC_API_KEY_ID}.p8" \
-            -authenticationKeyID "$ASC_API_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_API_ISSUER_ID" \
             -verbose
           pkg="$(find build/export-appstore -maxdepth 1 -name '*.pkg' -print -quit)"
           if [ -z "$pkg" ]; then
@@ -203,6 +260,13 @@ jobs:
             exit 1
           fi
           pkgutil --check-signature "$pkg"
+          payload_files="$(pkgutil --payload-files "$pkg")"
+          if ! printf '%s\n' "$payload_files" | grep -Fqx 'Distavo.app/Contents/embedded.provisionprofile' &&
+             ! printf '%s\n' "$payload_files" | grep -Fqx './Distavo.app/Contents/embedded.provisionprofile'; then
+            echo "::error::Exported pkg payload is missing Distavo.app/Contents/embedded.provisionprofile"
+            printf '%s\n' "$payload_files" | sed -n '1,120p'
+            exit 1
+          fi
 
       - name: Upload to App Store Connect
         timeout-minutes: 10

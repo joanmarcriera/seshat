@@ -66,7 +66,8 @@ Easiest path is Xcode → **Settings → Accounts → Manage Certificates → +*
 Then in your account portal create the **Mac App Store provisioning profile** for App ID
 `uk.co.riera.distavo`, tied to the Apple Distribution cert. Download it (Xcode "automatic signing"
 can also manage it, but this checklist uses **manual** signing to match `CODE_SIGN_STYLE: Manual`
-in `project.yml`).
+in `project.yml`). The profile must be embedded in `Distavo.app`; otherwise App Store Connect can
+accept delivery while marking the build ineligible for TestFlight with ITMS-90889.
 
 Verify the identities are in your keychain:
 
@@ -354,29 +355,43 @@ screenshots (show the menu/popover and any settings window).
 ### 4.4 Archive + upload
 
 The `Distavo-AppStore` scheme (in `apple/project.yml`) pins `configs/AppStore.xcconfig` via its
-`Release-AppStore` configuration, so the archive is the sandboxed edition. **Automatic** signing
-plus `-allowProvisioningUpdates` lets xcodebuild fetch the Mac App Store provisioning profile via
-your App Store Connect API key — no manual profile name to keep in sync:
+`Release-AppStore` configuration, so the archive is the sandboxed edition. Use
+**manual** signing and pin the Mac App Store provisioning profile. Apple can
+accept a delivery that omits it, but reports ITMS-90889 and makes the build
+ineligible for TestFlight when the main `.app` bundle lacks
+`Contents/embedded.provisionprofile`.
+
+Install the downloaded Mac App Store profile locally first:
+
+```bash
+PROFILE=~/Downloads/Distavo_AppStore.provisionprofile
+PROFILE_PLIST=/tmp/distavo-appstore-profile.plist
+security cms -D -i "$PROFILE" > "$PROFILE_PLIST"
+PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$PROFILE_PLIST")
+PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$PROFILE_PLIST")
+mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+cp "$PROFILE" ~/Library/MobileDevice/Provisioning\ Profiles/"$PROFILE_UUID".provisionprofile
+```
 
 ```bash
 xcodebuild -project Distavo.xcodeproj \
   -scheme Distavo-AppStore \
   -archivePath build/Distavo-AppStore.xcarchive \
-  -allowProvisioningUpdates \
-  -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8 \
-  -authenticationKeyID <KEY_ID> \
-  -authenticationKeyIssuerID <ISSUER_ID> \
   DEVELOPMENT_TEAM=<TEAM_ID> \
-  CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_STYLE=Manual \
+  CODE_SIGN_IDENTITY="Apple Distribution" \
+  PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
   archive
+
+test -f build/Distavo-AppStore.xcarchive/Products/Applications/Distavo.app/Contents/embedded.provisionprofile
 ```
 
 Create `apple/ExportOptions-AppStore.plist` with the **`app-store-connect`** method and the two
 signing identities pinned explicitly. (Pin them — a bare `signingStyle: automatic` export lets
 xcodebuild's cert auto-selection grab the *installer* cert to sign the `.app` code, which fails with
 "this identity cannot be used for signing code". The `.app` is signed by **Apple Distribution**, the
-`.pkg` installer by **3rd Party Mac Developer Installer**.) The provisioning profile is resolved by
-`-allowProvisioningUpdates` on the export command below:
+`.pkg` installer by **3rd Party Mac Developer Installer**.) Pin the provisioning
+profile by UUID:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -388,6 +403,10 @@ xcodebuild's cert auto-selection grab the *installer* cert to sign the `.app` co
   <key>signingStyle</key>               <string>manual</string>
   <key>signingCertificate</key>         <string>Apple Distribution</string>
   <key>installerSigningCertificate</key><string>3rd Party Mac Developer Installer</string>
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>uk.co.riera.distavo</key><string>PROFILE_UUID_HERE</string>
+  </dict>
 </dict>
 </plist>
 ```
@@ -399,14 +418,14 @@ Export, then upload. Two equivalent options:
 xcodebuild -exportArchive \
   -archivePath build/Distavo-AppStore.xcarchive \
   -exportPath build/export-appstore \
-  -exportOptionsPlist ExportOptions-AppStore.plist \
-  -allowProvisioningUpdates \
-  -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8 \
-  -authenticationKeyID <KEY_ID> \
-  -authenticationKeyIssuerID <ISSUER_ID>
+  -exportOptionsPlist ExportOptions-AppStore.plist
 
 # Verify the installer signature before uploading:
 pkgutil --check-signature build/export-appstore/*.pkg
+
+# Verify the exported payload still contains the provisioning profile:
+pkgutil --payload-files build/export-appstore/Distavo.pkg | \
+  grep -E '^(\./)?Distavo\.app/Contents/embedded\.provisionprofile$'
 
 # Option A — upload from the command line (App Store Connect API key):
 xcrun altool --upload-app -f build/export-appstore/Distavo.pkg \

@@ -72,3 +72,24 @@ either an allowed bot token or a PR-based bump flow.
 
 Revisit when: Every merge to `main` should become a fully automated public
 release and App Store Connect upload.
+
+## 2026-06-29 - Pin App Store provisioning manually for TestFlight eligibility
+
+Decision: Require a base64-encoded Mac App Store provisioning profile secret
+and pin that profile during the App Store archive/export workflow.
+
+Alternatives considered: Continue relying on `-allowProvisioningUpdates` with
+App Store Connect API credentials, or ignore ITMS-90889 because App Store
+Connect accepted delivery.
+
+Rationale: Apple reported that build 2 was delivered but not eligible for
+TestFlight because the main `Distavo.app` bundle lacked a provisioning profile.
+Manual profile installation gives the workflow a concrete profile to embed and
+allows CI to fail before upload if it is missing.
+
+Consequences: The App Store upload workflow now needs the
+`MAC_APP_STORE_PROVISIONING_PROFILE_BASE64` repository secret. Profile renewal
+must be handled when the profile expires.
+
+Revisit when: Xcode automatic signing reliably embeds the profile in archived
+and exported Mac App Store packages under GitHub Actions.

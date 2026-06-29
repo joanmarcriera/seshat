@@ -16,6 +16,11 @@
 
 ## Done
 
+- [x] Fix App Store TestFlight provisioning warning.
+  Completion criteria: App Store release workflow installs an explicit Mac App
+  Store provisioning profile, pins it during archive/export, and fails before
+  upload if the archive or package payload lacks `embedded.provisionprofile`.
+
 - [x] Add automatic minor version bumps after merges to `main`.
   Completion criteria: a workflow runs on non-bot pushes to `main`, increments
   `MARKETING_VERSION` by one minor version, increments

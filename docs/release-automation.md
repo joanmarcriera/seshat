@@ -35,9 +35,11 @@ From `distribution-checklist.md` §1 + §4.1:
 - **Apple Distribution** *and* **3rd Party Mac Developer Installer** certificates + an
   App record for `uk.co.riera.distavo` in App Store Connect. A Mac App Store `.pkg`
   needs both: the first signs the `.app`, the second signs the `.pkg` installer.
+- A **Mac App Store provisioning profile** for `uk.co.riera.distavo`. App Store
+  Connect can accept delivery without it, but Apple reports ITMS-90889 and the
+  build cannot be used with TestFlight unless the main `.app` bundle embeds it.
 - An **App-Specific Password** (notarization) and an **App Store Connect API key**
-  (.p8, App Manager role — used for App Store upload and, with `-allowProvisioningUpdates`,
-  to fetch/manage the App Store provisioning profile automatically).
+  (.p8, App Manager role — used for App Store upload).
 
 ## Secrets to add
 
@@ -61,9 +63,10 @@ Never commit these; never paste them in chat — add them yourself in the GitHub
 | `APPLE_DISTRIBUTION_CERT_PASSWORD` | That `.p12`'s export password. |
 | `APPLE_INSTALLER_CERT_P12_BASE64` | Export the **3rd Party Mac Developer Installer** identity (signs the `.pkg`) as `.p12`, base64 it. Required — a Mac App Store submission is a signed installer. |
 | `APPLE_INSTALLER_CERT_PASSWORD` | That `.p12`'s export password. |
+| `MAC_APP_STORE_PROVISIONING_PROFILE_BASE64` | Download the **Mac App Store** provisioning profile for `uk.co.riera.distavo`, then `base64 -i Distavo_AppStore.provisionprofile \| pbcopy`. The workflow validates team id, app id, and `get-task-allow=false`, installs it, and verifies the archive/pkg embed it. |
 | `ASC_API_KEY_ID` | App Store Connect → Users and Access → Integrations → App Store Connect API → key **Key ID**. |
 | `ASC_API_ISSUER_ID` | The **Issuer ID** on that same page. |
-| `ASC_API_KEY_P8_BASE64` | The downloaded `AuthKey_XXXX.p8`, base64'd (`base64 -i AuthKey_XXXX.p8`). With Automatic signing (`-allowProvisioningUpdates`) the App-Manager key lets `xcodebuild` fetch/manage the Mac App Store provisioning profile itself — **no separate profile secret needed**. (It can manage profiles but cannot mint distribution certs, which is why the two `.p12`s above are imported manually.) |
+| `ASC_API_KEY_P8_BASE64` | The downloaded `AuthKey_XXXX.p8`, base64'd (`base64 -i AuthKey_XXXX.p8`). Used by `altool` for upload to App Store Connect. |
 
 ## How `release.yml` works (Direct)
 1. Imports the Developer ID cert into a throwaway keychain.
@@ -75,21 +78,27 @@ Never commit these; never paste them in chat — add them yourself in the GitHub
 
 ## How `release-appstore.yml` works
 1. Imports **both** signing certs (Apple Distribution + 3rd Party Mac Developer
-   Installer) into a throwaway keychain, and installs the ASC API key.
-2. Archives the `Distavo-AppStore` scheme with **Automatic** signing +
-   `-allowProvisioningUpdates`, so xcodebuild fetches the App Store provisioning
-   profile via the API key. The scheme pins `AppStore.xcconfig` (sandboxed edition).
+   Installer) into a throwaway keychain, installs the Mac App Store provisioning
+   profile, and installs the ASC API key.
+2. Archives the `Distavo-AppStore` scheme with **Manual** signing, pinned to the
+   Apple Distribution identity and the installed provisioning profile. The
+   scheme pins `AppStore.xcconfig` (sandboxed edition). The workflow fails if
+   the archive is missing `Distavo.app/Contents/embedded.provisionprofile`.
 3. Exports a signed `.pkg` (`method: app-store-connect`) with the two signing identities
    **pinned explicitly** — `Apple Distribution` for the `.app`, `3rd Party Mac Developer
    Installer` for the `.pkg` (a bare automatic export mis-selects the installer cert for
-   code signing). The profile is resolved via `-allowProvisioningUpdates`. Then it uploads
-   with `xcrun altool --upload-app`; the build appears in App Store Connect and you attach
-   it to a version and **Submit for Review** (manual).
+   code signing) — and the provisioning profile pinned by UUID. The workflow
+   fails if the exported package payload is missing `embedded.provisionprofile`.
+   Then it uploads with `xcrun altool --upload-app`; the build appears in App
+   Store Connect and you attach it to a version and **Submit for Review** (manual).
 
 ## Local equivalent
-`apple/scripts/build-and-notarize.sh {direct|setapp|appstore}` does the same signing
+`apple/scripts/build-and-notarize.sh {direct|setapp}` does the same Developer ID signing
 + notarization from your Mac (uses your Xcode-logged-in account / a `notarytool`
 keychain profile instead of CI secrets) — handy for a one-off or to debug before tagging.
+For App Store uploads, follow `docs/distribution-checklist.md` §4.4 or the
+`release-appstore.yml` workflow because they explicitly pin and verify the Mac
+App Store provisioning profile.
 
 To preview or apply the same main-merge version bump locally:
 
