@@ -56,8 +56,12 @@ Easiest path is Xcode → **Settings → Accounts → Manage Certificates → +*
 
 - **Developer ID Application** — signs the Direct and Setapp builds for distribution outside the
   App Store. (There is also a *Developer ID Installer* cert; you only need it for `.pkg`/`.app`
-  installers — not required for a DMG/zip.)
-- **Apple Distribution** — signs the Mac App Store build.
+  installers distributed outside the store — not required for a DMG/zip.)
+- **Apple Distribution** — signs the Mac App Store `.app`.
+- **3rd Party Mac Developer Installer** — signs the Mac App Store `.pkg` installer. A Mac App
+  Store submission is a *signed installer package*, so this second identity is required in
+  addition to Apple Distribution. Confirm both are present:
+  `security find-identity -v -p codesigning`.
 
 Then in your account portal create the **Mac App Store provisioning profile** for App ID
 `uk.co.riera.distavo`, tied to the Apple Distribution cert. Download it (Xcode "automatic signing"
@@ -349,31 +353,41 @@ screenshots (show the menu/popover and any settings window).
 
 ### 4.4 Archive + upload
 
+The `Distavo-AppStore` scheme (in `apple/project.yml`) pins `configs/AppStore.xcconfig` via its
+`Release-AppStore` configuration, so the archive is the sandboxed edition. **Automatic** signing
+plus `-allowProvisioningUpdates` lets xcodebuild fetch the Mac App Store provisioning profile via
+your App Store Connect API key — no manual profile name to keep in sync:
+
 ```bash
 xcodebuild -project Distavo.xcodeproj \
   -scheme Distavo-AppStore \
-  -configuration Release \
   -archivePath build/Distavo-AppStore.xcarchive \
-  archive \
+  -allowProvisioningUpdates \
+  -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8 \
+  -authenticationKeyID <KEY_ID> \
+  -authenticationKeyIssuerID <ISSUER_ID> \
   DEVELOPMENT_TEAM=<TEAM_ID> \
-  CODE_SIGN_IDENTITY="Apple Distribution"
+  CODE_SIGN_STYLE=Automatic \
+  archive
 ```
 
-Create `apple/ExportOptions-AppStore.plist` with the **`app-store`** method:
+Create `apple/ExportOptions-AppStore.plist` with the **`app-store-connect`** method and the two
+signing identities pinned explicitly. (Pin them — a bare `signingStyle: automatic` export lets
+xcodebuild's cert auto-selection grab the *installer* cert to sign the `.app` code, which fails with
+"this identity cannot be used for signing code". The `.app` is signed by **Apple Distribution**, the
+`.pkg` installer by **3rd Party Mac Developer Installer**.) The provisioning profile is resolved by
+`-allowProvisioningUpdates` on the export command below:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>method</key>                <string>app-store</string>
-  <key>teamID</key>                <string>TEAM_ID_HERE</string>
-  <key>signingStyle</key>          <string>manual</string>
-  <key>signingCertificate</key>    <string>Apple Distribution</string>
-  <key>provisioningProfiles</key>
-  <dict>
-    <key>uk.co.riera.distavo</key> <string>Distavo Mac App Store Profile</string>
-  </dict>
+  <key>method</key>                     <string>app-store-connect</string>
+  <key>teamID</key>                     <string>TEAM_ID_HERE</string>
+  <key>signingStyle</key>               <string>manual</string>
+  <key>signingCertificate</key>         <string>Apple Distribution</string>
+  <key>installerSigningCertificate</key><string>3rd Party Mac Developer Installer</string>
 </dict>
 </plist>
 ```
@@ -381,22 +395,29 @@ Create `apple/ExportOptions-AppStore.plist` with the **`app-store`** method:
 Export, then upload. Two equivalent options:
 
 ```bash
-# Export the .pkg:
+# Export the .pkg (needs the "3rd Party Mac Developer Installer" cert in your keychain):
 xcodebuild -exportArchive \
   -archivePath build/Distavo-AppStore.xcarchive \
   -exportPath build/export-appstore \
-  -exportOptionsPlist ExportOptions-AppStore.plist
+  -exportOptionsPlist ExportOptions-AppStore.plist \
+  -allowProvisioningUpdates \
+  -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8 \
+  -authenticationKeyID <KEY_ID> \
+  -authenticationKeyIssuerID <ISSUER_ID>
 
-# Option A — upload from the command line:
+# Verify the installer signature before uploading:
+pkgutil --check-signature build/export-appstore/*.pkg
+
+# Option A — upload from the command line (App Store Connect API key):
 xcrun altool --upload-app -f build/export-appstore/Distavo.pkg \
-  -t macos --apple-id "<APPLE_ID>" --password "<APP_PWD>"
-# (or:  xcrun notarytool is NOT used here — App Store builds are notarized by App Review.)
+  -t macos --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>
+# (xcrun notarytool is NOT used here — App Store builds are notarized by App Review.)
 
 # Option B — drag the .pkg into Apple's Transporter.app (App Store Connect upload tool).
 ```
 
 > App Store builds do **not** need the §2 `notarytool`/`stapler` steps — Apple notarizes during
-> App Review. Sandbox + correct provisioning profile are what matter.
+> App Review. Sandbox + a correctly signed installer `.pkg` are what matter.
 
 ### 4.5 App Review 🔑 **[App Store Connect required]**
 

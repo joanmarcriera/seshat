@@ -6,11 +6,22 @@ options:
   deploymentTarget:
     macOS: "13.0"
   createIntermediateGroups: true
+# Three build configurations from one target, each pinned to an edition xcconfig
+# below: Debug/Release build the Direct edition; Release-AppStore builds the
+# sandboxed Mac App Store edition. The release-appstore.yml workflow archives the
+# `Distavo-AppStore` scheme so the App Store build provably uses AppStore.xcconfig
+# (bundle id + app-sandbox entitlements) rather than a fragile -xcconfig override.
+configs:
+  Debug: debug
+  Release: release
+  Release-AppStore: release
 settings:
   base:
     SWIFT_VERSION: "5.9"
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
+    # Left empty on purpose: CI (release*.yml) and scripts/build-and-notarize.sh
+    # inject the real Team ID via `DEVELOPMENT_TEAM=<id>` on the xcodebuild line.
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Manual
 packages:
@@ -23,6 +34,7 @@ targets:
     configFiles:
       Debug: configs/Direct.xcconfig
       Release: configs/Direct.xcconfig
+      Release-AppStore: configs/AppStore.xcconfig
     dependencies:
       - package: DistavoCore
     sources:
@@ -45,3 +57,14 @@ schemes:
         Distavo: all
     run:
       config: Debug
+  # App Store edition. `xcodebuild -scheme Distavo-AppStore archive` (no
+  # -configuration) uses the archive action's config below = Release-AppStore,
+  # which maps to configs/AppStore.xcconfig via the target's configFiles.
+  Distavo-AppStore:
+    build:
+      targets:
+        Distavo: all
+    run:
+      config: Release-AppStore
+    archive:
+      config: Release-AppStore

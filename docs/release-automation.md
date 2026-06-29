@@ -28,10 +28,12 @@ manual by Setapp's own rules.
 
 From `distribution-checklist.md` §1 + §4.1:
 - **Developer ID Application** certificate (Direct/Setapp signing).
-- **Apple Distribution** certificate + an App record for `uk.co.riera.distavo` in
-  App Store Connect (App Store signing/upload).
+- **Apple Distribution** *and* **3rd Party Mac Developer Installer** certificates + an
+  App record for `uk.co.riera.distavo` in App Store Connect. A Mac App Store `.pkg`
+  needs both: the first signs the `.app`, the second signs the `.pkg` installer.
 - An **App-Specific Password** (notarization) and an **App Store Connect API key**
-  (.p8, App Manager role — used for App Store signing + upload).
+  (.p8, App Manager role — used for App Store upload and, with `-allowProvisioningUpdates`,
+  to fetch/manage the App Store provisioning profile automatically).
 
 ## Secrets to add
 
@@ -51,11 +53,13 @@ Never commit these; never paste them in chat — add them yourself in the GitHub
 | Secret | What it is / how to make it |
 | --- | --- |
 | `APPLE_TEAM_ID` | Same as above (shared). |
-| `APPLE_DISTRIBUTION_CERT_P12_BASE64` | Export the **Apple Distribution** identity as `.p12`, base64 it. |
-| `APPLE_DISTRIBUTION_CERT_PASSWORD` | The `.p12` export password. |
+| `APPLE_DISTRIBUTION_CERT_P12_BASE64` | Export the **Apple Distribution** identity (signs the `.app`) as `.p12`, base64 it. |
+| `APPLE_DISTRIBUTION_CERT_PASSWORD` | That `.p12`'s export password. |
+| `APPLE_INSTALLER_CERT_P12_BASE64` | Export the **3rd Party Mac Developer Installer** identity (signs the `.pkg`) as `.p12`, base64 it. Required — a Mac App Store submission is a signed installer. |
+| `APPLE_INSTALLER_CERT_PASSWORD` | That `.p12`'s export password. |
 | `ASC_API_KEY_ID` | App Store Connect → Users and Access → Integrations → App Store Connect API → key **Key ID**. |
 | `ASC_API_ISSUER_ID` | The **Issuer ID** on that same page. |
-| `ASC_API_KEY_P8_BASE64` | The downloaded `AuthKey_XXXX.p8`, base64'd (`base64 -i AuthKey_XXXX.p8`). The API key also lets `xcodebuild` manage the provisioning profile automatically — no separate profile secret needed. |
+| `ASC_API_KEY_P8_BASE64` | The downloaded `AuthKey_XXXX.p8`, base64'd (`base64 -i AuthKey_XXXX.p8`). With Automatic signing (`-allowProvisioningUpdates`) the App-Manager key lets `xcodebuild` fetch/manage the Mac App Store provisioning profile itself — **no separate profile secret needed**. (It can manage profiles but cannot mint distribution certs, which is why the two `.p12`s above are imported manually.) |
 
 ## How `release.yml` works (Direct)
 1. Imports the Developer ID cert into a throwaway keychain.
@@ -66,10 +70,17 @@ Never commit these; never paste them in chat — add them yourself in the GitHub
    A `workflow_dispatch` run stops at step 4 and uploads the DMG as an artifact (dry run).
 
 ## How `release-appstore.yml` works
-1. Imports the Apple Distribution cert + installs the ASC API key.
-2. Archives the sandboxed App Store edition (automatic provisioning via the API key).
-3. Exports with `method: app-store-connect`, `destination: upload` → the build appears
-   in App Store Connect. You then attach it to a version and **Submit for Review** (manual).
+1. Imports **both** signing certs (Apple Distribution + 3rd Party Mac Developer
+   Installer) into a throwaway keychain, and installs the ASC API key.
+2. Archives the `Distavo-AppStore` scheme with **Automatic** signing +
+   `-allowProvisioningUpdates`, so xcodebuild fetches the App Store provisioning
+   profile via the API key. The scheme pins `AppStore.xcconfig` (sandboxed edition).
+3. Exports a signed `.pkg` (`method: app-store-connect`) with the two signing identities
+   **pinned explicitly** — `Apple Distribution` for the `.app`, `3rd Party Mac Developer
+   Installer` for the `.pkg` (a bare automatic export mis-selects the installer cert for
+   code signing). The profile is resolved via `-allowProvisioningUpdates`. Then it uploads
+   with `xcrun altool --upload-app`; the build appears in App Store Connect and you attach
+   it to a version and **Submit for Review** (manual).
 
 ## Local equivalent
 `apple/scripts/build-and-notarize.sh {direct|setapp|appstore}` does the same signing
