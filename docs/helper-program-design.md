@@ -57,6 +57,12 @@ EspoCRM   (the multi-service credit ledger — see below)
 
 Designed so **adding a future product = adding one `Product` record**, no schema change.
 
+> **Implemented 2026-06-29.** EspoCRM auto-prefixes custom entities with `C`, so the live entity
+> names are **`CProduct` / `CFeedback` / `CHelperAccount`** (use these in the n8n flow + API paths,
+> e.g. `/api/v1/CFeedback`). The reverse link on Contact is `cCFeedbacks`. Built + seeded (`Distavo`
+> + a `__SAMPLE App` template set), and the `claude` "API Integration" role was granted
+> create/read/edit on all three. The logical model below is unchanged.
+
 - **Product** (new custom entity) — one row per sellable thing.
   - `name` (e.g. "Distavo"), `key` (slug, e.g. `distavo`), `active` (bool).
   - Seed: `Distavo`. Later: `Localsmith`, `Tankmate`, …
