@@ -103,6 +103,13 @@ def patch_missing(client: AscClient, kind: str, path: str, resource_id: str,
 
 
 def setup_app_info(client: AscClient, app_id: str, listing: dict) -> None:
+    # Apple's "third-party content" means licensed media/characters, not
+    # open-source code libraries — Distavo bundles only the latter.
+    app = client.get(f"/v1/apps/{app_id}")["data"]
+    patch_missing(client, "apps", "/v1/apps", app_id, app["attributes"],
+                  {"contentRightsDeclaration": "DOES_NOT_USE_THIRD_PARTY_CONTENT"},
+                  "content rights declaration")
+
     info = client.get(f"/v1/apps/{app_id}/appInfos")["data"][0]
     info_id = info["id"]
 
@@ -201,10 +208,13 @@ def setup_review_detail(client: AscClient, version_id: str) -> None:
               "ASC_CONTACT_LAST_NAME, ASC_CONTACT_PHONE, ASC_CONTACT_EMAIL "
               "(e.g. in ~/.tokens) and re-run, or fill it in ASC by hand.")
         return
+    # demoAccountRequired=False matters: ASC defaults the "Sign-in required"
+    # checkbox on, which then demands demo credentials at submission time.
     attrs = {"contactFirstName": contact["first_name"],
              "contactLastName": contact["last_name"],
              "contactPhone": contact["phone"],
-             "contactEmail": contact["email"]}
+             "contactEmail": contact["email"],
+             "demoAccountRequired": False}
     existing = client.get(f"/v1/appStoreVersions/{version_id}/appStoreReviewDetail")
     if existing.get("data"):
         patch_missing(client, "appStoreReviewDetails", "/v1/appStoreReviewDetails",
