@@ -1,0 +1,57 @@
+name: Submit to App Review (manual)
+
+# Manually drive scripts/submit-appstore-review.py against App Store Connect.
+# This is the retry/test path for the gated submit-for-review job in
+# release-appstore.yml — use it when build processing timed out, after fixing
+# a rejection, or to stage-test with dry_run / until before a real submission.
+#
+# Reuses the same App Store Connect API key secrets as release-appstore.yml:
+#   ASC_API_KEY_ID, ASC_API_ISSUER_ID, ASC_API_KEY_P8_BASE64
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Marketing version (blank = read from apple/project.yml)"
+        required: false
+        default: ""
+      build_number:
+        description: "Build number (blank = read from apple/project.yml)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run — print mutations without performing them"
+        type: boolean
+        default: true
+      until:
+        description: "Stop after this phase"
+        type: choice
+        default: submit
+        options: [processed, compliance, version, attach, submit]
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install --quiet 'PyJWT[crypto]==2.10.1' 'requests==2.32.4'
+
+      - name: Submit for review
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_BUILD_NUMBER: ${{ inputs.build_number }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_UNTIL: ${{ inputs.until }}
+        run: |
+          set -euo pipefail
+          args=(--until "$INPUT_UNTIL")
+          [ -n "$INPUT_VERSION" ] && args+=(--version "$INPUT_VERSION")
+          [ -n "$INPUT_BUILD_NUMBER" ] && args+=(--build-number "$INPUT_BUILD_NUMBER")
+          [ "$INPUT_DRY_RUN" = "true" ] && args+=(--dry-run)
+          python3 scripts/submit-appstore-review.py "${args[@]}"
