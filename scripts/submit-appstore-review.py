@@ -59,6 +59,19 @@ REUSABLE_VERSION_STATES = {
 # reviewSubmissions states that mean "already with Apple" — do not double-submit.
 IN_FLIGHT_SUBMISSION_STATES = ["WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES"]
 
+# States proving a version reached (or passed) release. Apple only allows
+# "What's New" text once a previous version actually shipped — draft or
+# rejected records don't count.
+RELEASED_VERSION_STATES = {
+    "ACCEPTED",
+    "PROCESSING_FOR_DISTRIBUTION",
+    "PENDING_APPLE_RELEASE",
+    "PENDING_DEVELOPER_RELEASE",
+    "READY_FOR_DISTRIBUTION",
+    "READY_FOR_SALE",  # legacy appStoreState name
+    "REPLACED_WITH_NEW_VERSION",
+}
+
 
 class SubmitError(Exception):
     """Fatal, already-explained condition; printed without a traceback."""
@@ -239,7 +252,14 @@ def ensure_version(client: AscClient, app_id: str, marketing: str) -> tuple[str 
         f"/v1/apps/{app_id}/appStoreVersions",
         params={"filter[platform]": PLATFORM, "limit": "200"},
     )["data"]
-    is_first = all(v["attributes"]["versionString"] == marketing for v in all_versions)
+    for v in all_versions:
+        print(f"Existing version record: {v['attributes']['versionString']} "
+              f"(state {version_state(v)})")
+    is_first = not any(
+        version_state(v) in RELEASED_VERSION_STATES
+        for v in all_versions
+        if v["attributes"]["versionString"] != marketing
+    )
     existing = [v for v in all_versions if v["attributes"]["versionString"] == marketing]
 
     if existing:
