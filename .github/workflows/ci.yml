@@ -1,10 +1,10 @@
 name: CI
 
+# Development moved to self-hosted Forgejo (git.riera.co.uk); GitHub is a push
+# mirror only. Manual dispatch kept as an escape hatch — do not re-enable
+# push/PR triggers, they burn the Actions allowance on every mirror sync.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
