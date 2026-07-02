@@ -79,7 +79,17 @@ final class MeetingRecorder {
             let inputDevice = try AudioObjectID.readDefaultInputDevice()
             let inputUID = try inputDevice.readDeviceUID()
             micChannelCount = max(1, (try? inputDevice.readInputChannelCount()) ?? 1)
+            // A pro-audio interface can be the system OUTPUT and still expose
+            // input channels; those appear before the mic's in the aggregate's
+            // buffer list (sub-device order) and must not be counted as mic.
+            let outputInputChannels = (outputDevice == inputDevice)
+                ? 0 : ((try? outputDevice.readInputChannelCount()) ?? 0)
 
+            var subDevices: [[String: Any]] = [[kAudioSubDeviceUIDKey: outputUID]]
+            if inputUID != outputUID {
+                subDevices.append([kAudioSubDeviceUIDKey: inputUID,
+                                   kAudioSubDeviceDriftCompensationKey: true])
+            }
             let description: [String: Any] = [
                 kAudioAggregateDeviceNameKey: "Distavo Meeting Recorder",
                 kAudioAggregateDeviceUIDKey: UUID().uuidString,
@@ -87,11 +97,7 @@ final class MeetingRecorder {
                 kAudioAggregateDeviceIsPrivateKey: true,
                 kAudioAggregateDeviceIsStackedKey: false,
                 kAudioAggregateDeviceTapAutoStartKey: true,
-                kAudioAggregateDeviceSubDeviceListKey: [
-                    [kAudioSubDeviceUIDKey: outputUID],
-                    [kAudioSubDeviceUIDKey: inputUID,
-                     kAudioSubDeviceDriftCompensationKey: true],
-                ],
+                kAudioAggregateDeviceSubDeviceListKey: subDevices,
                 kAudioAggregateDeviceTapListKey: [
                     [kAudioSubTapUIDKey: tapDescription.uuid.uuidString,
                      kAudioSubTapDriftCompensationKey: true],
@@ -125,18 +131,20 @@ final class MeetingRecorder {
             micPeak = 0
             tapPeak = 0
             let micChannels = micChannelCount
+            let skipChannels = outputInputChannels
 
-            // 4. One IOProc reads the aggregate's aligned input buffers:
-            // the mic's channels come first (sub-device order), the tap's
-            // stereo mixdown after — mix each group down to one file channel.
+            // 4. One IOProc reads the aggregate's aligned input buffers, in
+            // sub-device order: any input channels of the output device
+            // (skipped), then the mic's, then the tap's stereo mixdown — mix
+            // mic and tap down to one file channel each.
             var newProcID: AudioDeviceIOProcID?
             let procErr = AudioDeviceCreateIOProcIDWithBlock(&newProcID, aggregateID, queue) {
                 [weak self] _, inInputData, _, _, _ in
                 guard let self, let file = self.file else { return }
                 let buffers = UnsafeMutableAudioBufferListPointer(
                     UnsafeMutablePointer(mutating: inInputData))
-                self.writeMixed(buffers: buffers, micChannels: micChannels,
-                                format: format, to: file)
+                self.writeMixed(buffers: buffers, skipChannels: skipChannels,
+                                micChannels: micChannels, format: format, to: file)
             }
             guard procErr == noErr, let procID = newProcID else {
                 throw CaptureError.coreAudio("create IO proc", procErr)
@@ -167,6 +175,9 @@ final class MeetingRecorder {
         if aggregateID.isValid {
             if let procID = ioProcID {
                 AudioDeviceStop(aggregateID, procID)
+                // Drain any already-dispatched IO block BEFORE destroying the
+                // HAL objects whose buffers that block reads.
+                queue.sync {}
                 AudioDeviceDestroyIOProcID(aggregateID, procID)
                 ioProcID = nil
             }
@@ -177,18 +188,20 @@ final class MeetingRecorder {
             AudioHardwareDestroyProcessTap(tapID)
             tapID = .unknown
         }
-        // Flush any in-flight IO block before closing the file.
         queue.sync { [weak self] in
             self?.file = nil
             self?.outputBuffer = nil
         }
     }
 
-    /// Runs on `queue`. Splits the aggregate's input channels into microphone
-    /// (first `micChannels`) and tap (the rest), averages each group into one
-    /// channel of the stereo output buffer, tracks peaks, writes to the file.
+    /// Runs on `queue`. Splits the aggregate's input channels into ignored
+    /// (`skipChannels` — input channels of the output device, if any),
+    /// microphone (the next `micChannels`) and tap (the rest), averages mic
+    /// and tap into one channel each of the stereo output buffer, tracks
+    /// peaks, writes to the file.
     private func writeMixed(buffers: UnsafeMutableAudioBufferListPointer,
-                            micChannels: Int, format: AVAudioFormat, to file: AVAudioFile) {
+                            skipChannels: Int, micChannels: Int,
+                            format: AVAudioFormat, to file: AVAudioFile) {
         guard let firstBuffer = buffers.first(where: { $0.mDataByteSize > 0 }) else { return }
         let frames = Int(firstBuffer.mDataByteSize) /
             (MemoryLayout<Float>.size * max(1, Int(firstBuffer.mNumberChannels)))
@@ -211,13 +224,14 @@ final class MeetingRecorder {
             let available = Int(buffer.mDataByteSize) / (MemoryLayout<Float>.size * channels)
             let count = min(frames, available)
             for channel in 0..<channels {
-                let isMic = globalChannel < micChannels
+                defer { globalChannel += 1 }
+                guard globalChannel >= skipChannels else { continue }
+                let isMic = globalChannel < skipChannels + micChannels
                 let target = outData[isMic ? 0 : 1]
                 for frame in 0..<count {
                     target[frame] += data[frame * channels + channel]
                 }
                 if isMic { micMixed += 1 } else { tapMixed += 1 }
-                globalChannel += 1
             }
         }
         if micMixed > 1 {
