@@ -348,9 +348,19 @@ This is the single most common App Store regression vs. the Direct build — tes
 
 ### 4.3 Screenshots & metadata 🔑 **[App Store Connect required]**
 
-Provide macOS screenshots (Apple-accepted sizes, e.g. 2560×1600 / 2880×1800), description, keywords,
-support URL, what's-new text, and a 1024×1024 app icon. A menu-bar app still needs representative
-screenshots (show the menu/popover and any settings window).
+Most of this is scripted: `scripts/setup-appstore-listing.py` (auth like the submit script; also
+accepts the `APPLE_API_*` names from `~/.tokens`) pushes everything in
+`apple/metadata/listing.json` — subtitle, description, keywords, support/marketing/privacy URLs,
+copyright, primary category, the full age-rating questionnaire, free pricing — plus the App Review
+contact from `ASC_CONTACT_{FIRST_NAME,LAST_NAME,PHONE,EMAIL}` env vars (kept out of the repo), and
+uploads any PNGs in `apple/metadata/screenshots/` (accepted Mac sizes: 1280×800, 1440×900,
+2560×1600, 2880×1800) as desktop screenshots. Idempotent; `--dry-run` first. Ran for 1.4.0 on
+2026-07-02.
+
+Still manual in ASC: **App Privacy** ("data usages" — for Distavo: Data Not Collected; no public
+API) and capturing the screenshots themselves. A menu-bar app still needs representative
+screenshots (show the menu/popover and any settings window). The 1024×1024 icon comes from the
+uploaded build's asset catalog.
 
 ### 4.4 Archive + upload
 
