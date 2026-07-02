@@ -280,6 +280,24 @@ def ensure_version(client: AscClient, app_id: str, marketing: str) -> tuple[str 
             )
         return version["id"], is_first
 
+    # ASC allows only ONE editable version per platform, so if a draft exists
+    # under another version string (e.g. the 1.0 record created with the app
+    # listing), rename it — that keeps its description/screenshots — instead
+    # of attempting a doomed create.
+    editable = [v for v in all_versions if version_state(v) in REUSABLE_VERSION_STATES]
+    if editable:
+        version = editable[0]
+        old = version["attributes"]["versionString"]
+        client.mutate(
+            "PATCH", f"/v1/appStoreVersions/{version['id']}",
+            {"data": {"type": "appStoreVersions", "id": version["id"],
+                      "attributes": {"versionString": marketing,
+                                     "releaseType": "AFTER_APPROVAL"}}},
+            f"rename editable version record {old} -> {marketing} "
+            "(keeps its listing metadata)",
+        )
+        return version["id"], is_first
+
     created = client.mutate(
         "POST", "/v1/appStoreVersions",
         {"data": {
