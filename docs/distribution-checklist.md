@@ -440,8 +440,18 @@ xcrun altool --upload-app -f build/export-appstore/Distavo.pkg \
 
 ### 4.5 App Review 🔑 **[App Store Connect required]**
 
-In App Store Connect, attach the uploaded build to the version, set pricing/availability, answer
-export-compliance, and **Submit for Review**. Common rejections for a menu-bar app: missing/incorrect
+**Automated path (normal):** write `apple/metadata/whats-new/en-GB.txt`, push the `v*` tag, and
+after the upload job succeeds press **Approve** on the `app-store-submission` environment in the
+Actions run — `scripts/submit-appstore-review.py` then waits for build processing, sets export
+compliance, attaches the build to the version (renaming the editable draft if needed), and submits
+for review; the version releases automatically once Apple approves. Retry or stage-test any of
+those steps with Actions → "Submit to App Review (manual)" (`dry_run` defaults on). Pricing /
+availability / listing metadata still live in App Store Connect and only need setting once.
+
+**Manual fallback:** in App Store Connect, attach the uploaded build to the version, set
+pricing/availability, answer export-compliance, and **Submit for Review**.
+
+Common rejections for a menu-bar app: missing/incorrect
 sandbox entitlements, using private APIs, or a donate/payment link that bypasses Apple's IAP rules
 (the `DONATE_ENABLED` flag is gated to the US storefront per `AppStore.xcconfig` — confirm that gating
 holds at runtime before submitting).
