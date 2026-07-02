@@ -9,6 +9,11 @@ name: Submit to App Review (manual)
 #   ASC_API_KEY_ID, ASC_API_ISSUER_ID, ASC_API_KEY_P8_BASE64
 
 on:
+  # TEMPORARY (remove before merge): exercise the workflow pre-merge, since
+  # workflow_dispatch only works once the file is on the default branch.
+  # inputs.* are empty on push, so the run step's defaults (dry-run) apply.
+  push:
+    branches: ["feat/appstore-auto-submit"]
   workflow_dispatch:
     inputs:
       version:
@@ -50,8 +55,10 @@ jobs:
           INPUT_UNTIL: ${{ inputs.until }}
         run: |
           set -euo pipefail
-          args=(--until "$INPUT_UNTIL")
-          [ -n "$INPUT_VERSION" ] && args+=(--version "$INPUT_VERSION")
-          [ -n "$INPUT_BUILD_NUMBER" ] && args+=(--build-number "$INPUT_BUILD_NUMBER")
-          [ "$INPUT_DRY_RUN" = "true" ] && args+=(--dry-run)
+          # Default to a dry run unless explicitly disabled, so a push-triggered
+          # or misconfigured run can never submit anything by accident.
+          args=(--until "${INPUT_UNTIL:-submit}")
+          if [ -n "${INPUT_VERSION:-}" ]; then args+=(--version "$INPUT_VERSION"); fi
+          if [ -n "${INPUT_BUILD_NUMBER:-}" ]; then args+=(--build-number "$INPUT_BUILD_NUMBER"); fi
+          if [ "${INPUT_DRY_RUN:-true}" != "false" ]; then args+=(--dry-run); fi
           python3 scripts/submit-appstore-review.py "${args[@]}"
